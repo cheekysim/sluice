@@ -15,6 +15,7 @@
 
 		// Replace UserID with Username
 		if (segments[2] === 'users' && segments[3]) {
+			// TODO: Replace with actual logic to fetch the username based on the user ID
 			segments[3] = 'Username'; // Replace with actual username if available
 		}
 		return segments.slice(1).map(titleCase);
@@ -34,6 +35,7 @@
 				<!-- Links for previous items -->
 				{#each breadcrumbItems.slice(0, -1) as item (item)}
 					<Breadcrumb.Item>
+						<!-- TODO: Replace with actual logic to generate the correct href for each breadcrumb item -->
 						<Breadcrumb.Link href="/dashboard">{item}</Breadcrumb.Link>
 					</Breadcrumb.Item>
 					<Breadcrumb.Separator />

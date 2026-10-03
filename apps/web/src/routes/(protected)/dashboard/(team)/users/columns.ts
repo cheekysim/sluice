@@ -9,8 +9,9 @@ export type User = {
 	id: string;
 	name: string;
 	email: string;
-	role: string;
-	image: string;
+	roleId: number | null;
+	roleName: string;
+	image: string | null;
 	provider: string;
 };
 
@@ -21,7 +22,7 @@ export const columns = columnHelper.columns([
 		id: 'avatar',
 		cell: ({ row }) => {
 			return renderComponent(DataTableAvatar, {
-				url: row.original.image,
+				url: row.original.image ?? '',
 				name: row.original.name
 			});
 		}
@@ -36,10 +37,10 @@ export const columns = columnHelper.columns([
 	columnHelper.accessor('email', {
 		header: 'Email'
 	}),
-	columnHelper.accessor('role', {
+	columnHelper.accessor('roleName', {
 		header: 'Role',
 		cell: ({ row }) => {
-			return renderComponent(DataTableBadge, { badge: row.original.role });
+			return renderComponent(DataTableBadge, { badge: row.original.roleName });
 		}
 	}),
 	columnHelper.accessor('provider', {
