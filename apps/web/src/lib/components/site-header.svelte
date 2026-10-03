@@ -14,7 +14,10 @@
 		const segments = pathname.split('/');
 
 		// Replace UserID with Username
-		return segments.slice(2).map(titleCase);
+		if (segments[2] === 'users' && segments[3]) {
+			segments[3] = 'Username'; // Replace with actual username if available
+		}
+		return segments.slice(1).map(titleCase);
 	}
 
 	let breadcrumbItems = $derived(formatBreadcrumbItem(page.url.pathname));
@@ -28,15 +31,18 @@
 		<Separator orientation="vertical" class="me-2 data-vertical:h-4 data-vertical:self-auto" />
 		<Breadcrumb.Root class="hidden sm:block">
 			<Breadcrumb.List>
-				<Breadcrumb.Item>
-					<Breadcrumb.Link href="/dashboard">Dashboard</Breadcrumb.Link>
-				</Breadcrumb.Item>
-				{#each breadcrumbItems as item (item)}
-					<Breadcrumb.Separator />
+				<!-- Links for previous items -->
+				{#each breadcrumbItems.slice(0, -1) as item (item)}
 					<Breadcrumb.Item>
-						<Breadcrumb.Page>{titleCase(item)}</Breadcrumb.Page>
+						<Breadcrumb.Link href="/dashboard">{item}</Breadcrumb.Link>
 					</Breadcrumb.Item>
+					<Breadcrumb.Separator />
 				{/each}
+				<!-- Active final item -->
+				<Breadcrumb.Item>
+					<Breadcrumb.Page>{titleCase(breadcrumbItems[breadcrumbItems.length - 1])}</Breadcrumb.Page
+					>
+				</Breadcrumb.Item>
 			</Breadcrumb.List>
 		</Breadcrumb.Root>
 		<div class="w-full sm:ms-auto sm:w-auto">TODO</div>

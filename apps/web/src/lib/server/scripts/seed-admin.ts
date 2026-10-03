@@ -2,9 +2,10 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq } from 'drizzle-orm';
 import { betterAuth } from 'better-auth/minimal';
-import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2';
 import * as schema from '../db/schema';
 import { user } from '../db/schema';
+import { relations } from '../db/relations';
 
 async function main() {
 	const { DATABASE_URL, ORIGIN, BETTER_AUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
@@ -15,7 +16,7 @@ async function main() {
 	}
 
 	const client = postgres(DATABASE_URL);
-	const db = drizzle(client, { schema });
+	const db = drizzle({ client, relations });
 
 	try {
 		const [existingUser] = await db.select({ id: user.id }).from(user).limit(1);
@@ -27,7 +28,7 @@ async function main() {
 		const auth = betterAuth({
 			baseURL: ORIGIN,
 			secret: BETTER_AUTH_SECRET,
-			database: drizzleAdapter(db, { provider: 'pg' }),
+			database: drizzleAdapter(db, { provider: 'pg', schema }),
 			emailAndPassword: { enabled: true }
 		});
 
@@ -35,7 +36,7 @@ async function main() {
 			body: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD, name: 'Owner' }
 		});
 
-		await db.update(user).set({ role: 'owner' }).where(eq(user.id, createdUser.id));
+		await db.update(user).set({ roleId: 1 }).where(eq(user.id, createdUser.id));
 
 		console.log(`Created Owner user: ${ADMIN_EMAIL}`);
 	} finally {

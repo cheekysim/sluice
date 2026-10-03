@@ -17,9 +17,7 @@
 
 	const session = client.useSession();
 
-	const user = $derived(
-		$session.data?.user ?? { name: '', email: '', image: '/avatars/shadcn.jpg' }
-	);
+	const user = $derived($session.data?.user ?? { name: '', email: '', image: null });
 </script>
 
 <Sidebar.Menu>
@@ -33,7 +31,9 @@
 						{...props}
 					>
 						<Avatar.Root class="size-8 rounded-lg">
-							<Avatar.Image src={user.image} alt={user.name} />
+							{#if user.image}
+								<Avatar.Image src={user.image} alt={user.name} />
+							{/if}
 							<Avatar.Fallback class="rounded-lg">CN</Avatar.Fallback>
 						</Avatar.Root>
 						<div class="grid flex-1 text-start text-sm leading-tight">
@@ -53,7 +53,9 @@
 				<DropdownMenu.Label class="p-0 font-normal">
 					<div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
 						<Avatar.Root class="size-8 rounded-lg">
-							<Avatar.Image src={user.image} alt={user.name} />
+							{#if user.image}
+								<Avatar.Image src={user.image} alt={user.name} />
+							{/if}
 							<Avatar.Fallback class="rounded-lg">CN</Avatar.Fallback>
 						</Avatar.Root>
 						<div class="grid flex-1 text-start text-sm leading-tight">

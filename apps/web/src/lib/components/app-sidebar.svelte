@@ -18,14 +18,19 @@
 				icon: DashboardIcon
 			},
 			{
-				title: 'Users',
-				url: resolve('/dashboard/users'),
-				icon: UsersIcon
-			},
-			{
 				title: 'Settings',
 				url: resolve('/dashboard/settings'),
 				icon: SettingsIcon
+			}
+		],
+		navTeam: [
+			{
+				title: 'Users',
+				url: resolve('/dashboard/users')
+			},
+			{
+				title: 'Roles',
+				url: resolve('/dashboard/roles')
 			}
 		]
 	};
@@ -54,12 +59,31 @@
 					<Sidebar.MenuItem class="flex items-center gap-2">
 						<Sidebar.MenuButton
 							data-active={page.url.pathname === item.url}
-							class="min-w-8 text-primary-foreground duration-200 ease-linear hover:bg-primary/80 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground data-[active=true]:bg-primary"
+							class="min-w-8 text-primary-foreground/90 duration-200 ease-linear hover:bg-primary/80 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground data-[active=true]:bg-primary"
 							tooltipContent={item.title}
 						>
 							{#snippet child({ props })}
 								<a href={item.url} {...props}>
 									<item.icon />
+									<span>{item.title}</span>
+								</a>
+							{/snippet}
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
+				{/each}
+			</Sidebar.Menu>
+		</Sidebar.Group>
+		<Sidebar.Group>
+			<Sidebar.Menu>
+				{#each data.navTeam as item (item.title)}
+					<Sidebar.MenuItem class="flex items-center gap-2">
+						<Sidebar.MenuButton
+							data-active={page.url.pathname === item.url}
+							class="min-w-8 text-primary-foreground duration-200 ease-linear hover:bg-primary/60 hover:bg-primary/80 hover:text-primary-foreground  data-[active=true]:bg-primary"
+							tooltipContent={item.title}
+						>
+							{#snippet child({ props })}
+								<a href={item.url} {...props}>
 									<span>{item.title}</span>
 								</a>
 							{/snippet}

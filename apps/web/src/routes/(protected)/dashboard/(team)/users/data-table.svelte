@@ -3,9 +3,12 @@
 	import { type ColumnDef, type RowData, createTable, FlexRender } from '@tanstack/svelte-table';
 	import * as Table from '$lib/components/ui/table';
 	import { features, type DataTableFeatures } from './data-table-features.js';
-	import Button from '$lib/components/ui/button/button.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import RefreshIcon from '@lucide/svelte/icons/refresh-cw';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 
 	type DataTableProps<TData extends RowData> = {
 		columns: ColumnDef<DataTableFeatures, TData>[];
@@ -33,9 +36,45 @@
 	const pagination = $derived(table.atoms.pagination.get());
 
 	let pageSizeOpen = $state(false);
+
+	let isRefreshing = $state(false);
+
+	const refreshData = () => {
+		// Start icon animation
+		isRefreshing = true;
+
+		// Implement your data refresh logic here
+		console.log('Refreshing data...');
+
+		// Stop icon animation after data is refreshed
+		setTimeout(() => {
+			isRefreshing = false;
+		}, 1000); // Adjust the timeout as needed
+	};
 </script>
 
 <div>
+	<div class="flex items-center justify-between gap-4 py-4">
+		<div class="flex items-center">
+			<Input
+				placeholder="Filter Users..."
+				value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+				onchange={(e) => {
+					table.getColumn('name')?.setFilterValue(e.currentTarget.value);
+				}}
+				oninput={(e) => {
+					table.getColumn('name')?.setFilterValue(e.currentTarget.value);
+				}}
+				class="max-w-sm"
+			/>
+		</div>
+		<div class="flex flex-row items-center gap-2">
+			<Button variant="secondary" onclick={refreshData}
+				><RefreshIcon class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" /></Button
+			>
+			<Button href="/dashboard/users/create"><PlusIcon class="h-4 w-4" />Create User</Button>
+		</div>
+	</div>
 	<div class="rounded-md border px-4 py-2">
 		<Table.Root>
 			<Table.Header>

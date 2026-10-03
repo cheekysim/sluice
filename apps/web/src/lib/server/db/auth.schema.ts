@@ -1,5 +1,18 @@
-import { relations } from 'drizzle-orm';
-import { pgTable, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
+import { defineRelationsPart } from 'drizzle-orm';
+import {
+	pgTable,
+	text,
+	timestamp,
+	boolean,
+	index,
+	integer,
+	primaryKey,
+	serial
+} from 'drizzle-orm/pg-core';
+
+// ---------------------------------------------------------------------------
+// Base Auth Tables
+// ---------------------------------------------------------------------------
 
 export const user = pgTable('user', {
 	id: text('id').primaryKey(),
@@ -7,7 +20,8 @@ export const user = pgTable('user', {
 	email: text('email').notNull().unique(),
 	emailVerified: boolean('email_verified').default(false).notNull(),
 	image: text('image'),
-	role: text('role').default('user').notNull(),
+	// Foreign key link to roles table
+	roleId: integer('role_id').references(() => role.id, { onDelete: 'set null' }),
 	provider: text('provider').default('internal').notNull(),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	updatedAt: timestamp('updated_at')
@@ -75,21 +89,91 @@ export const verification = pgTable(
 	(table) => [index('verification_identifier_idx').on(table.identifier)]
 );
 
-export const userRelations = relations(user, ({ many }) => ({
-	sessions: many(session),
-	accounts: many(account)
-}));
+// ---------------------------------------------------------------------------
+// Roles & Permissions Tables
+// ---------------------------------------------------------------------------
 
-export const sessionRelations = relations(session, ({ one }) => ({
-	user: one(user, {
-		fields: [session.userId],
-		references: [user.id]
-	})
-}));
+export const role = pgTable('role', {
+	id: serial('id').primaryKey(),
+	role: text('role').notNull().unique()
+});
 
-export const accountRelations = relations(account, ({ one }) => ({
-	user: one(user, {
-		fields: [account.userId],
-		references: [user.id]
+export const permission = pgTable('permission', {
+	id: serial('id').primaryKey(),
+	action: text('action').notNull().unique()
+});
+
+export const rolePermission = pgTable(
+	'role_permission',
+	{
+		roleId: integer('role_id')
+			.notNull()
+			.references(() => role.id, { onDelete: 'cascade' }),
+		permissionId: integer('permission_id')
+			.notNull()
+			.references(() => permission.id, { onDelete: 'cascade' })
+	},
+	(table) => [primaryKey({ columns: [table.roleId, table.permissionId] })]
+);
+
+// ---------------------------------------------------------------------------
+// Unified Relations Definition
+// ---------------------------------------------------------------------------
+
+export const authRelations = defineRelationsPart(
+	{ user, session, account, verification, role, permission, rolePermission },
+	(r) => ({
+		user: {
+			sessions: r.many.session({
+				from: r.user.id,
+				to: r.session.userId
+			}),
+			accounts: r.many.account({
+				from: r.user.id,
+				to: r.account.userId
+			}),
+			role: r.one.role({
+				from: r.user.roleId,
+				to: r.role.id
+			})
+		},
+		session: {
+			user: r.one.user({
+				from: r.session.userId,
+				to: r.user.id
+			})
+		},
+		account: {
+			user: r.one.user({
+				from: r.account.userId,
+				to: r.user.id
+			})
+		},
+		role: {
+			users: r.many.user({
+				from: r.role.id,
+				to: r.user.roleId
+			}),
+			permissions: r.many.rolePermission({
+				from: r.role.id,
+				to: r.rolePermission.roleId
+			})
+		},
+		permission: {
+			roles: r.many.rolePermission({
+				from: r.permission.id,
+				to: r.rolePermission.permissionId
+			})
+		},
+		rolePermission: {
+			role: r.one.role({
+				from: r.rolePermission.roleId,
+				to: r.role.id
+			}),
+			permission: r.one.permission({
+				from: r.rolePermission.permissionId,
+				to: r.permission.id
+			})
+		}
 	})
-}));
+);

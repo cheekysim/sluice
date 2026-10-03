@@ -3,6 +3,7 @@ import type { DataTableFeatures } from './data-table-features.js';
 import DataTableActions from './data-table-actions.svelte';
 import DataTableBadge from './data-table-badge.svelte';
 import DataTableAvatar from './data-table-avatar.svelte';
+import DataTableNameButton from './data-table-name-button.svelte';
 
 export type User = {
 	id: string;
@@ -26,7 +27,11 @@ export const columns = columnHelper.columns([
 		}
 	}),
 	columnHelper.accessor('name', {
-		header: 'Name'
+		header: ({ column }) => {
+			return renderComponent(DataTableNameButton, {
+				onclick: column.getToggleSortingHandler()
+			});
+		}
 	}),
 	columnHelper.accessor('email', {
 		header: 'Email'
