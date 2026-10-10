@@ -31,6 +31,10 @@
 			{
 				title: 'Roles',
 				url: resolve('/dashboard/roles')
+			},
+			{
+				title: 'Invites',
+				url: resolve('/dashboard/invites')
 			}
 		]
 	};
@@ -59,7 +63,7 @@
 					<Sidebar.MenuItem class="flex items-center gap-2">
 						<Sidebar.MenuButton
 							data-active={page.url.pathname === item.url}
-							class="min-w-8 text-primary-foreground/90 duration-200 ease-linear hover:bg-primary/80 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground data-[active=true]:bg-primary"
+							class="min-w-8 text-primary-foreground/90 duration-200 ease-linear hover:bg-primary/60 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground data-[active=true]:bg-primary"
 							tooltipContent={item.title}
 						>
 							{#snippet child({ props })}
@@ -79,7 +83,7 @@
 					<Sidebar.MenuItem class="flex items-center gap-2">
 						<Sidebar.MenuButton
 							data-active={page.url.pathname === item.url}
-							class="min-w-8 text-primary-foreground duration-200 ease-linear hover:bg-primary/60 hover:bg-primary/80 hover:text-primary-foreground  data-[active=true]:bg-primary"
+							class="min-w-8 text-primary-foreground duration-200 ease-linear hover:bg-primary/60 hover:text-primary-foreground  data-[active=true]:bg-primary"
 							tooltipContent={item.title}
 						>
 							{#snippet child({ props })}

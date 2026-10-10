@@ -13,5 +13,11 @@ export const auth = betterAuth({
 	emailAndPassword: { enabled: true },
 	plugins: [
 		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
-	]
+	],
+	user: {
+		additionalFields: {
+			provider: { type: 'string', required: false, defaultValue: 'internal', input: false },
+			roleId: { type: 'number', required: false, input: false }
+		}
+	}
 });

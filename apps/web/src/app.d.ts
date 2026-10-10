@@ -7,6 +7,7 @@ declare global {
 		interface Locals {
 			user?: User;
 			session?: Session;
+			db?: typeof import('$lib/server/db').db;
 		}
 
 		// interface Error {}

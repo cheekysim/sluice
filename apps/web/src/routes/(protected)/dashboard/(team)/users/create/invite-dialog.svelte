@@ -23,14 +23,14 @@
 
 	let {
 		open = $bindable(false),
-		uuid,
+		token,
 		email,
 		inviteValidFor
-	}: { open?: boolean; uuid: string; email: string; inviteValidFor: string } = $props();
+	}: { open?: boolean; token: string; email: string; inviteValidFor: string } = $props();
 
 	const origin = page.url.origin;
 	const inviteLink = $derived(
-		`${origin}/invite?token=${encodeURIComponent(uuid)}&email=${encodeURIComponent(email)}`
+		`${origin}/invite?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`
 	);
 </script>
 

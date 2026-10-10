@@ -18,14 +18,14 @@
 	const { form: formData, enhance, message } = form;
 
 	let inviteDialogOpen = $state(false);
-	let inviteUUID = $state('');
+	let inviteToken = $state('');
 	let inviteEmail = $state('');
 	let inviteValidFor = $state('');
 
 	message.subscribe((msg) => {
 		if (msg) {
-			const { uuid, email, inviteValidFor: expiration } = JSON.parse(msg);
-			inviteUUID = uuid;
+			const { token, email, inviteValidFor: expiration } = JSON.parse(msg);
+			inviteToken = token;
 			inviteEmail = email;
 			inviteValidFor = expiration;
 			inviteDialogOpen = true;
@@ -47,6 +47,7 @@
 		return item ? item.label : '';
 	};
 
+	// TODO: Replace with DB call
 	const roles = [
 		{ value: 'admin', label: 'Admin' },
 		{ value: 'user', label: 'User' }
@@ -71,7 +72,6 @@
 					<Input {...props} bind:value={$formData.email} placeholder="user@example.com" />
 				{/snippet}
 			</Form.Control>
-			<Form.Description>This is the user's email address.</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
 		<Form.Field {form} name="inviteValidFor">
@@ -99,7 +99,6 @@
 					</Select.Root>
 				{/snippet}
 			</Form.Control>
-			<Form.Description>This is the duration for which the invite is valid.</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
 		<Form.Field {form} name="role">
@@ -114,7 +113,7 @@
 						</Select.Trigger>
 						<Select.Content>
 							<Select.Group>
-								{#each [{ value: 'admin', label: 'Admin' }, { value: 'user', label: 'User' }] as item (item.value)}
+								{#each roles as item (item.value)}
 									<Select.Item value={item.value}>{item.label}</Select.Item>
 								{/each}
 							</Select.Group>
@@ -122,11 +121,14 @@
 					</Select.Root>
 				{/snippet}
 			</Form.Control>
-			<Form.Description>This is the role assigned to the new user.</Form.Description>
 			<Form.FieldErrors />
 		</Form.Field>
-
 		<Form.Button>Submit</Form.Button>
 	</div>
 </form>
-<InviteDialog bind:open={inviteDialogOpen} uuid={inviteUUID} email={inviteEmail} {inviteValidFor} />
+<InviteDialog
+	bind:open={inviteDialogOpen}
+	token={inviteToken}
+	email={inviteEmail}
+	{inviteValidFor}
+/>

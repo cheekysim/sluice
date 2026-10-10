@@ -14,7 +14,7 @@
 		const segments = pathname.split('/');
 
 		// Replace UserID with Username
-		if (segments[2] === 'users' && segments[3]) {
+		if (segments[2] === 'users' && segments[3] && segments[3].length == 32) {
 			// TODO: Replace with actual logic to fetch the username based on the user ID
 			segments[3] = 'Username'; // Replace with actual username if available
 		}
