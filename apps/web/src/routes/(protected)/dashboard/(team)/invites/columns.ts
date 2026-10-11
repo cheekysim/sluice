@@ -10,6 +10,7 @@ export type Invite = {
 	invited_by: string;
 	expires_at: Date;
 	role: string;
+	accepted: boolean;
 };
 
 const columnHelper = createColumnHelper<DataTableFeatures, Invite>();
@@ -40,6 +41,13 @@ export const columns = columnHelper.columns([
 		header: 'Role',
 		cell: ({ row }) => {
 			return renderComponent(DataTableBadge, { badge: row.original.role });
+		}
+	}),
+	columnHelper.accessor('accepted', {
+		header: 'Accepted',
+		filterFn: 'equals',
+		cell: ({ row }) => {
+			return renderComponent(DataTableBadge, { badge: row.original.accepted ? 'Yes' : 'No' });
 		}
 	}),
 	columnHelper.display({

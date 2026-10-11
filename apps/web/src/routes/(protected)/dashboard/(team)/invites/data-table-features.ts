@@ -26,7 +26,10 @@ export const features = tableFeatures({
 	filteredRowModel: createFilteredRowModel(),
 	paginatedRowModel: createPaginatedRowModel(),
 	sortedRowModel: createSortedRowModel(),
-	filterFns: { includesString: filterFn_includesString },
+	filterFns: {
+		includesString: filterFn_includesString,
+		equals: (row, columnId, filterValue) => row.getValue(columnId) === filterValue
+	},
 	sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text }
 });
 

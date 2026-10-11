@@ -2,6 +2,8 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { resolve } from '$app/paths';
+	import { enhance } from '$app/forms';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	let { open = $bindable(false), id } = $props();
 </script>
@@ -23,9 +25,14 @@
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel variant="outline">Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action variant="destructive" onclick={() => console.log('Delete', id)}
-				>Delete</AlertDialog.Action
-			>
+			<AlertDialog.Action variant="destructive" onclick={() => console.log('Delete', id)}>
+				{#snippet child({ props })}
+					<form method="post" action="?/deleteUser" use:enhance>
+						<input type="hidden" name="id" value={id} />
+						<Button {...props} class="w-full" variant="destructive" type="submit">Delete</Button>
+					</form>
+				{/snippet}
+			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

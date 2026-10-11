@@ -68,7 +68,7 @@ export const actions: Actions = {
 		// Save to invite table
 		await event.locals.db.insert(invite).values({
 			email: form.data.email,
-			invited_by: event.locals.user.id,
+			invited_by: event.locals.user.email,
 			created_at: new Date(),
 			accepted: false,
 			token: token,

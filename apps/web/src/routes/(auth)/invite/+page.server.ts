@@ -61,11 +61,14 @@ export const actions: Actions = {
 			.update(user)
 			.set({
 				provider: 'internal',
-				roleId: inviteRow.role_id
+				roleId: inviteRow.role_id,
 			})
 			.where(eq(user.id, newUser.user.id));
 
-		await event.locals.db.delete(invite).where(eq(invite.id, inviteRow.id));
+		// await event.locals.db.delete(invite).where(eq(invite.id, inviteRow.id));
+		await event.locals.db.update(invite).set({
+			accepted: true
+		}).where(eq(invite.id, inviteRow.id));
 
 		return redirect(302, '/dashboard');
 	}

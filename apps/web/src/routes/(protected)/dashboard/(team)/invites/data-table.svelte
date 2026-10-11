@@ -6,6 +6,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import { Switch } from '$lib/components/ui/switch';
+	import { Label } from '$lib/components/ui/label';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import RefreshIcon from '@lucide/svelte/icons/refresh-cw';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -29,7 +31,13 @@
 			pagination: {
 				pageIndex: 0,
 				pageSize: 10
-			}
+			},
+			columnFilters: [
+				{
+					id: 'accepted',
+					value: false
+				}
+			]
 		}
 	});
 
@@ -53,7 +61,7 @@
 
 <div>
 	<div class="flex items-center justify-between gap-4 py-4">
-		<div class="flex items-center">
+		<div class="flex items-center gap-4">
 			<Input
 				placeholder="Filter Invites..."
 				value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
@@ -65,6 +73,16 @@
 				}}
 				class="max-w-sm"
 			/>
+			<div class="flex items-center gap-2">
+				<Switch
+					id="accepted"
+					checked={(table.getColumn('accepted')?.getFilterValue() as boolean) ?? false}
+					onCheckedChange={(e) => {
+						table.getColumn('accepted')?.setFilterValue(e === true ? true : false);
+					}}
+				/>
+				<Label for="accepted" class="w-fit text-nowrap">Show Accepted</Label>
+			</div>
 		</div>
 		<div class="flex flex-row items-center gap-2">
 			<Button variant="secondary" onclick={refreshData}

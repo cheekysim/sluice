@@ -6,7 +6,7 @@
 	import { type SuperValidated, type Infer, superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
-	import InviteDialog from './invite-dialog.svelte';
+	import InviteDialog from '../../../../../../lib/components/invite-dialog.svelte';
 
 	let { form: initialForm }: { form: SuperValidated<Infer<FormSchema>> } = $props();
 
