@@ -12,7 +12,7 @@
 <div class="flex h-dvh items-center justify-center">
 	<Card.Root class="m-4 w-full max-w-md">
 		<Card.Header class="flex flex-col items-center justify-center">
-			<img src="/word_mark_white.webp" alt="Logo" class="mb-4" />
+			<img src="/word_mark_white.png" alt="Logo" class="mb-4" />
 			<Card.Description class="text-md text-base">You've Been Invited To Join</Card.Description>
 		</Card.Header>
 		<Separator />

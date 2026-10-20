@@ -5,8 +5,10 @@
 	import { formSchema, type FormSchema } from './schema';
 	import { type SuperValidated, type Infer, superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import { page } from '$app/state';
+	import { titleCase } from '$lib/utils';
 
-	import InviteDialog from '../../../../../../lib/components/invite-dialog.svelte';
+	import InviteDialog from '$lib/components/invite-dialog.svelte';
 
 	let { form: initialForm }: { form: SuperValidated<Infer<FormSchema>> } = $props();
 
@@ -47,11 +49,12 @@
 		return item ? item.label : '';
 	};
 
-	// TODO: Replace with DB call
-	const roles = [
-		{ value: 'admin', label: 'Admin' },
-		{ value: 'user', label: 'User' }
-	];
+	const roles: { value: string; label: string }[] = page.data.roles.map(
+		(role: { id: string; name: string }) => ({
+			value: role.id,
+			label: titleCase(role.name)
+		})
+	);
 
 	const getRoleLabel = (value: string) => {
 		const item = roles.find((item) => item.value === value);

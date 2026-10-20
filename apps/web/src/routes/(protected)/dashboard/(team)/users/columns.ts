@@ -1,9 +1,9 @@
 import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
-import type { DataTableFeatures } from './data-table-features.js';
+import type { DataTableFeatures } from '$lib/components/data-table/features.js';
 import DataTableActions from './data-table-actions.svelte';
-import DataTableBadge from './data-table-badge.svelte';
+import DataTableBadge from '$lib/components/data-table/badge.svelte';
 import DataTableAvatar from './data-table-avatar.svelte';
-import DataTableNameButton from './data-table-name-button.svelte';
+import SortButton from '$lib/components/data-table/sort-button.svelte';
 
 export type User = {
 	id: string;
@@ -29,7 +29,8 @@ export const columns = columnHelper.columns([
 	}),
 	columnHelper.accessor('name', {
 		header: ({ column }) => {
-			return renderComponent(DataTableNameButton, {
+			return renderComponent(SortButton, {
+				label: 'Name',
 				onclick: column.getToggleSortingHandler()
 			});
 		}

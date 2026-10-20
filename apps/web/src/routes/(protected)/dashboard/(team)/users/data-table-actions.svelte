@@ -7,7 +7,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { resolve } from '$app/paths';
 
-	import AlertDeleteUser from '$lib/components/alert-delete-user.svelte';
+	import AlertDelete from '$lib/components/alert-delete.svelte';
 
 	let { id }: { id: string } = $props();
 	let deleteDialogOpen = $state(false);
@@ -46,4 +46,7 @@
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<AlertDeleteUser bind:open={deleteDialogOpen} {id} />
+<AlertDelete bind:open={deleteDialogOpen} {id} title="Delete User?" action="?/deleteUser">
+	This will permanently delete this user. View <a href={resolve('/dashboard/settings')}>Settings</a>
+	to manage any related data.
+</AlertDelete>

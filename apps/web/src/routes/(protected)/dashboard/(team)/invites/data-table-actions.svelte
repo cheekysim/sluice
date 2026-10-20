@@ -6,7 +6,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import InviteDialog from '$lib/components/invite-dialog.svelte';
 
-	import AlertDeleteInvite from './alert-delete-invite.svelte';
+	import AlertDelete from '$lib/components/alert-delete.svelte';
 	import { enhance } from '$app/forms';
 
 	let { id }: { id: string } = $props();
@@ -62,7 +62,9 @@
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<AlertDeleteInvite bind:open={deleteDialogOpen} {id} />
+<AlertDelete bind:open={deleteDialogOpen} {id} title="Delete Invite?" action="?/deleteInvite">
+	This will permanently delete this invite.
+</AlertDelete>
 <InviteDialog
 	bind:open={inviteDialogOpen}
 	token={newInviteData.token}

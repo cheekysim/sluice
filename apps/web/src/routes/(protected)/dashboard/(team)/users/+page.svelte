@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import DataTable from './data-table.svelte';
+	import DataTable from '$lib/components/data-table/data-table.svelte';
 	import { columns } from './columns';
 
 	let { data }: PageProps = $props();
@@ -11,5 +11,13 @@
 		<h2 class="mb-0">Manage Users</h2>
 		<p>Setup and manage users within the application</p>
 	</div>
-	<DataTable data={data.users} {columns} />
+	<DataTable
+		data={data.users}
+		{columns}
+		refreshKey="app:users"
+		filterColumn="name"
+		filterPlaceholder="Filter Users..."
+		createHref="/dashboard/users/create"
+		createLabel="Create User"
+	/>
 </div>

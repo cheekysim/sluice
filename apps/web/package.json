@@ -15,12 +15,14 @@
 		"test:e2e": "playwright install && playwright test",
 		"test": "npm run test:e2e",
 		"db:push": "drizzle-kit push",
+		"db:drop": "drizzle-kit drop",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes",
 		"seed:admin": "tsx --env-file=.env src/lib/server/scripts/seed-admin.ts",
-		"seed:role": "tsx --env-file=.env src/lib/server/scripts/seed-role.ts"
+		"seed:role": "tsx --env-file=.env src/lib/server/scripts/seed-role.ts",
+		"seed:permission": "tsx --env-file=.env src/lib/server/scripts/seed-permission.ts"
 	},
 	"devDependencies": {
 		"@better-auth/drizzle-adapter": "1.7.6",

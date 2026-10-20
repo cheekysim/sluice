@@ -6,9 +6,21 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import { v4 as uuidv4 } from 'uuid';
 import { invite } from '$lib/server/db/schema.js';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+	const roles = await locals.db.query.role.findMany({
+		columns: { id: true, name: true },
+		where: { name: { ne: 'owner' } }
+	});
+	const defaultRole = roles.find(({ name }) => name === 'user') ?? roles[0];
 	return {
-		form: await superValidate(zod4(formSchema))
+		form: await superValidate(zod4(formSchema), {
+			defaults: {
+				email: '',
+				inviteValidFor: '3_day',
+				role: defaultRole?.id.toString() ?? ''
+			}
+		}),
+		roles
 	};
 };
 
@@ -25,13 +37,6 @@ export const actions: Actions = {
 			return fail(401, {
 				form,
 				message: 'User not authenticated'
-			});
-		}
-
-		if (!event.locals.db) {
-			return fail(500, {
-				form,
-				message: 'Database not initialized'
 			});
 		}
 
@@ -59,11 +64,15 @@ export const actions: Actions = {
 
 		const daysValidFor: number = parseInt(form.data.inviteValidFor.split('_')[0], 10);
 
-		// Get role ID
+		// The form submits role IDs, so resolve the selected ID and reject stale or forged values.
 		const foundRole = await event.locals.db.query.role.findFirst({
-			where: { name: form.data.role },
+			where: { id: Number(form.data.role), name: { ne: 'owner' } },
 			columns: { id: true }
 		});
+
+		if (!foundRole) {
+			return setError(form, 'role', 'Please select a valid role');
+		}
 
 		// Save to invite table
 		await event.locals.db.insert(invite).values({
@@ -72,7 +81,7 @@ export const actions: Actions = {
 			created_at: new Date(),
 			accepted: false,
 			token: token,
-			role_id: foundRole?.id,
+			role_id: foundRole.id,
 			expires_at: new Date(Date.now() + daysValidFor * 24 * 60 * 60 * 1000)
 		});
 

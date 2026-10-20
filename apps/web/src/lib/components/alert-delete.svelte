@@ -1,10 +1,25 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
-	import { Button } from '$lib/components/ui/button';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { enhance } from '$app/forms';
+	import { toast } from 'svelte-sonner';
+	import { Button } from '$lib/components/ui/button/index.js';
 
-	let { open = $bindable(false), id } = $props();
+	let {
+		open = $bindable(false),
+		id,
+		title,
+		action,
+		children
+	}: {
+		open?: boolean;
+		id: string;
+		title: string;
+		/** Form action to post to, e.g. `?/deleteUser`. */
+		action: string;
+		children: Snippet;
+	} = $props();
 </script>
 
 <AlertDialog.Root bind:open>
@@ -15,14 +30,26 @@
 			>
 				<Trash2Icon />
 			</AlertDialog.Media>
-			<AlertDialog.Title>Delete Invite?</AlertDialog.Title>
-			<AlertDialog.Description>This will permanently delete this invite.</AlertDialog.Description>
+			<AlertDialog.Title>{title}</AlertDialog.Title>
+			<AlertDialog.Description>
+				{@render children()}
+			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel variant="outline">Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action variant="destructive" onclick={() => console.log('Delete', id)}>
+			<AlertDialog.Action variant="destructive">
 				{#snippet child({ props })}
-					<form method="post" action="?/deleteInvite" use:enhance>
+					<form
+						method="post"
+						{action}
+						use:enhance={() =>
+							async ({ result, update }) => {
+								if (result.type === 'failure' && typeof result.data?.message === 'string') {
+									toast.error(result.data.message);
+								}
+								await update();
+							}}
+					>
 						<input type="hidden" name="id" value={id} />
 						<Button {...props} class="w-full" variant="destructive" type="submit">Delete</Button>
 					</form>

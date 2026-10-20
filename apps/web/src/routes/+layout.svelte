@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
+	// import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.png';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 
 	import { ModeWatcher } from 'mode-watcher';

@@ -12,17 +12,17 @@ async function main() {
 	const db = drizzle({ client, relations });
 
 	try {
-		const [existingRole] = await db.select({ role: role.role }).from(role).limit(1);
+		const [existingRole] = await db.select({ id: role.id }).from(role).limit(1);
 		if (existingRole) {
 			console.log('Roles table is not empty, skipping owner seed.');
 			return;
 		}
 
-		await db.insert(role).values({ role: 'owner' });
+		await db.insert(role).values({ name: 'owner' });
 		console.log(`Created Owner role: owner`);
-		await db.insert(role).values({ role: 'admin' });
+		await db.insert(role).values({ name: 'admin' });
 		console.log(`Created Admin role: admin`);
-		await db.insert(role).values({ role: 'user' });
+		await db.insert(role).values({ name: 'user' });
 		console.log(`Created User role: user`);
 	} finally {
 		await client.end();

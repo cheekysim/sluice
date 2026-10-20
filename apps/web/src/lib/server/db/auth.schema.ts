@@ -95,7 +95,9 @@ export const verification = pgTable(
 
 export const role = pgTable('role', {
 	id: serial('id').primaryKey(),
-	name: text('name').notNull().unique()
+	name: text('name').notNull().unique(),
+	description: text('description'),
+	default: boolean('default').notNull().default(false)
 });
 
 export const permission = pgTable('permission', {

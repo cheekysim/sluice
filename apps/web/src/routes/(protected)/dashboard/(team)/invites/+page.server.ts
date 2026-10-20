@@ -1,11 +1,13 @@
 import type { PageServerLoad, Actions } from './$types';
 import { v4 as uuidv4 } from 'uuid';
-import { db } from '$lib/server/db';
 import type { Invite } from './columns.js';
 import { invite } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
-export const load = (async () => {
+export const load = (async ({ locals, depends }) => {
+	depends('app:invites');
+
+	const { db } = locals;
 	const rows = await db.query.invite.findMany({
 		columns: {
 			id: true,
@@ -41,16 +43,17 @@ export const load = (async () => {
 }) satisfies PageServerLoad;
 
 export const actions = {
-	deleteInvite: async ({ request }) => {
+	deleteInvite: async ({ request, locals }) => {
 		const data = await request.formData();
 		const id = data.get('id');
 		if (typeof id !== 'string') return { success: false };
 
-		await db.delete(invite).where(eq(invite.id, parseInt(id, 10)));
+		await locals.db.delete(invite).where(eq(invite.id, parseInt(id, 10)));
 
 		return { success: true };
 	},
-	regenInvite: async ({ request }) => {
+	regenInvite: async ({ request, locals }) => {
+		const { db } = locals;
 		const data = await request.formData();
 		const id = data.get('id');
 		if (typeof id !== 'string') return { success: false };

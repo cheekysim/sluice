@@ -1,8 +1,11 @@
 <script lang="ts" generics="TData extends RowData">
+	import { invalidate } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import { cn } from '$lib/utils';
 	import { type ColumnDef, type RowData, createTable, FlexRender } from '@tanstack/svelte-table';
 	import * as Table from '$lib/components/ui/table';
-	import { features, type DataTableFeatures } from './data-table-features.js';
+	import { features, type DataTableFeatures } from './features.js';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -15,9 +18,31 @@
 	type DataTableProps<TData extends RowData> = {
 		columns: ColumnDef<DataTableFeatures, TData>[];
 		data: TData[];
+		/** Dependency key registered by the page's `load` with `depends()`. */
+		refreshKey: string;
+		/** Column the text filter applies to. */
+		filterColumn: string;
+		filterPlaceholder: string;
+		createHref?: Pathname;
+		createLabel?: string;
+		/** Optional boolean column filter exposed as a switch, e.g. "Show Accepted". */
+		toggleFilter?: { columnId: string; label: string };
 	};
 
-	let { data, columns }: DataTableProps<TData> = $props();
+	let {
+		data,
+		columns,
+		refreshKey,
+		filterColumn,
+		filterPlaceholder,
+		createHref,
+		createLabel,
+		toggleFilter
+	}: DataTableProps<TData> = $props();
+
+	// Hide rows matching the toggle (e.g. accepted invites) until it is switched on.
+	// svelte-ignore state_referenced_locally
+	const initialColumnFilters = toggleFilter ? [{ id: toggleFilter.columnId, value: false }] : [];
 
 	const table = createTable({
 		features,
@@ -32,30 +57,23 @@
 				pageIndex: 0,
 				pageSize: 10
 			},
-			columnFilters: [
-				{
-					id: 'accepted',
-					value: false
-				}
-			]
+			columnFilters: initialColumnFilters
 		}
 	});
 
 	const pagination = $derived(table.atoms.pagination.get());
 
 	let pageSizeOpen = $state(false);
-
 	let isRefreshing = $state(false);
 
-	const refreshData = () => {
+	const refreshData = async () => {
+		if (isRefreshing) return;
 		isRefreshing = true;
-
-		// TODO: Implement data refresh logic
-		console.log('Refreshing data...');
-
-		setTimeout(() => {
+		try {
+			await invalidate(refreshKey);
+		} finally {
 			isRefreshing = false;
-		}, 1000);
+		}
 	};
 </script>
 
@@ -63,32 +81,33 @@
 	<div class="flex items-center justify-between gap-4 py-4">
 		<div class="flex items-center gap-4">
 			<Input
-				placeholder="Filter Invites..."
-				value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
-				onchange={(e) => {
-					table.getColumn('email')?.setFilterValue(e.currentTarget.value);
-				}}
+				placeholder={filterPlaceholder}
+				value={(table.getColumn(filterColumn)?.getFilterValue() as string) ?? ''}
 				oninput={(e) => {
-					table.getColumn('email')?.setFilterValue(e.currentTarget.value);
+					table.getColumn(filterColumn)?.setFilterValue(e.currentTarget.value);
 				}}
 				class="max-w-sm"
 			/>
-			<div class="flex items-center gap-2">
-				<Switch
-					id="accepted"
-					checked={(table.getColumn('accepted')?.getFilterValue() as boolean) ?? false}
-					onCheckedChange={(e) => {
-						table.getColumn('accepted')?.setFilterValue(e === true ? true : false);
-					}}
-				/>
-				<Label for="accepted" class="w-fit text-nowrap">Show Accepted</Label>
-			</div>
+			{#if toggleFilter}
+				<div class="flex items-center gap-2">
+					<Switch
+						id={toggleFilter.columnId}
+						checked={(table.getColumn(toggleFilter.columnId)?.getFilterValue() as boolean) ?? false}
+						onCheckedChange={(checked) => {
+							table.getColumn(toggleFilter.columnId)?.setFilterValue(checked);
+						}}
+					/>
+					<Label for={toggleFilter.columnId} class="w-fit text-nowrap">{toggleFilter.label}</Label>
+				</div>
+			{/if}
 		</div>
 		<div class="flex flex-row items-center gap-2">
-			<Button variant="secondary" onclick={refreshData}
-				><RefreshIcon class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" /></Button
-			>
-			<Button href="/dashboard/users/create"><PlusIcon class="h-4 w-4" />Invite User</Button>
+			<Button variant="secondary" onclick={refreshData} aria-label="Refresh">
+				<RefreshIcon class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
+			</Button>
+			{#if createHref}
+				<Button href={resolve(createHref)}><PlusIcon class="h-4 w-4" />{createLabel}</Button>
+			{/if}
 		</div>
 	</div>
 	<div class="rounded-md border px-4 py-2">

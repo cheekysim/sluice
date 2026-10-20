@@ -10,18 +10,17 @@
 
 	import { titleCase } from '$lib/utils';
 
-	function formatBreadcrumbItem(pathname: string) {
-		const segments = pathname.split('/');
+	function formatBreadcrumbItem(pathname: string, label?: string) {
+		const segments = pathname.split('/').slice(1);
 
-		// Replace UserID with Username
-		if (segments[2] === 'users' && segments[3] && segments[3].length == 32) {
-			// TODO: Replace with actual logic to fetch the username based on the user ID
-			segments[3] = 'Username'; // Replace with actual username if available
-		}
-		return segments.slice(1).map(titleCase);
+		return segments.map((segment, index) => ({
+			// Detail pages supply a `breadcrumb` (e.g. a user's name) to replace their id segment
+			text: index === segments.length - 1 && label ? label : titleCase(segment),
+			href: `/${segments.slice(0, index + 1).join('/')}`
+		}));
 	}
 
-	let breadcrumbItems = $derived(formatBreadcrumbItem(page.url.pathname));
+	let breadcrumbItems = $derived(formatBreadcrumbItem(page.url.pathname, page.data.breadcrumb));
 </script>
 
 <header class="sticky top-0 z-50 flex w-full items-center border-b bg-background">
@@ -35,15 +34,13 @@
 				<!-- Links for previous items -->
 				{#each breadcrumbItems.slice(0, -1) as item (item)}
 					<Breadcrumb.Item>
-						<!-- TODO: Replace with actual logic to generate the correct href for each breadcrumb item -->
-						<Breadcrumb.Link href="/dashboard">{item}</Breadcrumb.Link>
+						<Breadcrumb.Link href={item.href}>{item.text}</Breadcrumb.Link>
 					</Breadcrumb.Item>
 					<Breadcrumb.Separator />
 				{/each}
 				<!-- Active final item -->
 				<Breadcrumb.Item>
-					<Breadcrumb.Page>{titleCase(breadcrumbItems[breadcrumbItems.length - 1])}</Breadcrumb.Page
-					>
+					<Breadcrumb.Page>{breadcrumbItems[breadcrumbItems.length - 1].text}</Breadcrumb.Page>
 				</Breadcrumb.Item>
 			</Breadcrumb.List>
 		</Breadcrumb.Root>

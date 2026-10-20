@@ -1,8 +1,8 @@
 import { createColumnHelper, renderComponent } from '@tanstack/svelte-table';
-import type { DataTableFeatures } from './data-table-features.js';
+import type { DataTableFeatures } from '$lib/components/data-table/features.js';
 import DataTableActions from './data-table-actions.svelte';
-import DataTableBadge from './data-table-badge.svelte';
-import DataTableEmailButton from './data-table-email-button.svelte';
+import DataTableBadge from '$lib/components/data-table/badge.svelte';
+import SortButton from '$lib/components/data-table/sort-button.svelte';
 
 export type Invite = {
 	id: number;
@@ -18,7 +18,8 @@ const columnHelper = createColumnHelper<DataTableFeatures, Invite>();
 export const columns = columnHelper.columns([
 	columnHelper.accessor('email', {
 		header: ({ column }) => {
-			return renderComponent(DataTableEmailButton, {
+			return renderComponent(SortButton, {
+				label: 'Email',
 				onclick: column.getToggleSortingHandler()
 			});
 		}
