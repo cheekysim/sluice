@@ -6,7 +6,7 @@
 	import { titleCase } from '$lib/utils';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
-	import { formSchema } from './schema';
+	import { formSchema, passwordSchema } from './schema';
 
 	let { data }: PageProps = $props();
 	// svelte-ignore state_referenced_locally
@@ -15,6 +15,13 @@
 		resetForm: false
 	});
 	const { form: formData, enhance, message } = form;
+
+	// svelte-ignore state_referenced_locally
+	const pwForm = superForm(data.passwordForm, {
+		validators: zod4Client(passwordSchema),
+		resetForm: true
+	});
+	const { form: pwData, enhance: pwEnhance, message: pwMessage } = pwForm;
 
 	const roles = $derived(
 		data.roles.map((role) => ({
@@ -81,6 +88,47 @@
 				<p class="text-sm text-green-700" role="status">{$message}</p>
 			{/if}
 			<Form.Button>Save Changes</Form.Button>
+		</div>
+	</form>
+
+	<form method="POST" action="?/setPassword" use:pwEnhance>
+		<div class="space-y-4 rounded-md border px-4 py-2">
+			<div>
+				<h2>Set Password</h2>
+				<p>Manually set a new password. The user will be signed out of all sessions.</p>
+			</div>
+			<Form.Field form={pwForm} name="password">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>New password</Form.Label>
+						<Input
+							{...props}
+							bind:value={$pwData.password}
+							type="password"
+							autocomplete="new-password"
+						/>
+					{/snippet}
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
+			<Form.Field form={pwForm} name="confirmPassword">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Confirm password</Form.Label>
+						<Input
+							{...props}
+							bind:value={$pwData.confirmPassword}
+							type="password"
+							autocomplete="new-password"
+						/>
+					{/snippet}
+				</Form.Control>
+				<Form.FieldErrors />
+			</Form.Field>
+			{#if $pwMessage}
+				<p class="text-sm text-green-700" role="status">{$pwMessage}</p>
+			{/if}
+			<Form.Button>Set Password</Form.Button>
 		</div>
 	</form>
 </div>

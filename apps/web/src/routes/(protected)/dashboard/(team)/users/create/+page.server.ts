@@ -5,13 +5,15 @@ import { formSchema } from './schema';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { v4 as uuidv4 } from 'uuid';
 import { invite } from '$lib/server/db/schema.js';
+import { requirePermission } from '$lib/server/permissions';
 
 export const load: PageServerLoad = async ({ locals }) => {
+	await requirePermission(locals, 'users.manage');
 	const roles = await locals.db.query.role.findMany({
-		columns: { id: true, name: true },
+		columns: { id: true, name: true, default: true },
 		where: { name: { ne: 'owner' } }
 	});
-	const defaultRole = roles.find(({ name }) => name === 'user') ?? roles[0];
+	const defaultRole = roles.find((r) => r.default) ?? roles[0];
 	return {
 		form: await superValidate(zod4(formSchema), {
 			defaults: {
@@ -20,12 +22,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 				role: defaultRole?.id.toString() ?? ''
 			}
 		}),
-		roles
+		roles: roles.map(({ id, name }) => ({ id, name }))
 	};
 };
 
 export const actions: Actions = {
 	default: async (event) => {
+		await requirePermission(event.locals, 'users.manage');
 		const form = await superValidate(event, zod4(formSchema));
 		if (!form.valid) {
 			return fail(400, {

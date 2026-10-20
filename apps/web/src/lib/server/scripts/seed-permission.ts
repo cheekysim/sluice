@@ -21,6 +21,9 @@ const PERMISSIONS = [
 	// API keys: manage everyone's, or only your own
 	'keys.manage',
 	'keys.self',
+	// Plugins: install, configure and run route-lifecycle modules
+	'plugins.read',
+	'plugins.write',
 	// Configuration and settings
 	'config.read',
 	'config.write',
@@ -30,11 +33,19 @@ const PERMISSIONS = [
 	'stats.read'
 ];
 
-// Role bundles from the spec that exist as seeded roles. Owner gets everything and Admin
-// everything except roles.manage; both only ever gain permissions here, never lose them.
+// Role bundles from the spec. Seeding only ever adds grants, never removes them.
 const ROLE_PERMISSIONS: Record<string, string[]> = {
 	owner: PERMISSIONS,
-	admin: PERMISSIONS.filter((action) => action !== 'roles.manage')
+	admin: PERMISSIONS.filter((action) => action !== 'roles.manage'),
+	operator: [
+		'rules.read',
+		'rules.write',
+		'providers.read',
+		'stats.read',
+		'audit.read',
+		'keys.self'
+	],
+	viewer: ['rules.read', 'providers.read', 'stats.read', 'audit.read']
 };
 
 async function main() {

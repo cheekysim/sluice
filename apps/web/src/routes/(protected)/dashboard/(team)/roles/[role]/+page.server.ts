@@ -5,10 +5,12 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import { titleCase } from '$lib/utils';
 import { roleSchema } from '../schema';
 import { saveRole } from '../save-role.server';
+import { requirePermission } from '$lib/server/permissions';
 
 const parseId = (value: string) => (/^[1-9]\d*$/.test(value) ? Number(value) : null);
 
 export const load: PageServerLoad = async ({ params, locals }) => {
+	await requirePermission(locals, 'roles.manage');
 	const id = parseId(params.role);
 	const [roleData, permissions] = await Promise.all([
 		id === null
@@ -41,6 +43,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 export const actions: Actions = {
 	default: async ({ params, request, locals }) => {
+		await requirePermission(locals, 'roles.manage');
 		const id = parseId(params.role);
 		const form = await superValidate(request, zod4(roleSchema));
 		if (!form.valid) return fail(400, { form });

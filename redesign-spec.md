@@ -91,6 +91,9 @@ declared as external appear on `/api/v1`. Everything else is internal and never 
 - `settings` — key/value global config (defaults in code, DB overrides).
 - `backend_providers` — name, type (registry key), enabled, config (encrypted JSON), target_host.
 - `proxy_providers` — name, type (registry key), enabled, config (encrypted JSON), host.
+- `plugins` — name, type (registry key), enabled, config (encrypted JSON), hooks (array of
+  `route.created` / `route.deleted`), node_id (nullable — scope to one node).
+- `plugin_runs` — plugin_id, rule_id, hook, status, error, started_at, finished_at (feeds audit).
 - `rules` — the proxy rule set: domain/hostname, port/upstream, backend_provider_id,
   proxy_provider_id, enabled, desired_state, deployed_state, timestamps.
 - `config_schemas` — provider config **schema versioning** (see §7.2).
@@ -112,12 +115,13 @@ declared as external appear on `/api/v1`. Everything else is internal and never 
 Permission model, not role checks. An endpoint answers "does the token carry `X.write`?"
 
 Base permission set (extensible): `rules.read` `rules.write` `providers.read`
-`providers.write` `users.manage` `roles.manage` `config.read` `config.write` `audit.read`
-`stats.read` `keys.manage` `keys.self` `settings.write`
+`providers.write` `nodes.read` `nodes.write` `plugins.read` `plugins.write` `users.manage`
+`roles.manage` `config.read` `config.write` `audit.read` `stats.read` `keys.manage` `keys.self`
+`settings.write`
 
 Roles (bundles of those permissions):
 - **Owner** — all permissions.
-- **Admin** — all except `roles.manage` (Owner keeps that); can manage users & keys.
+- **Admin** — all except `roles.manage` (Owner keeps that); can manage users, keys & plugins.
 - **Operator** — `rules.*`, `providers.read`, `stats.read`, `audit.read`, `keys.self`.
 - **Viewer** — `*.read` across rules, providers, stats, audit.
 
@@ -169,6 +173,30 @@ capabilities, lifecycle hooks (`validate`, `apply`, `status`, `health`).
   frontend = nginx. Third-party types load from enabled packages; unknown types are refused
   with a clear validation error.
 
+### 7.4 Plugins
+Plugins are modules that run on **route lifecycle events** — when a rule is created or deleted —
+to perform side effects outside the proxy itself. The primary use case is calling **cloud
+provider APIs** (e.g. AWS, Hetzner, DigitalOcean, Cloudflare) to open or close **firewall
+rules on the cloud server hosting the app / agent**, so a port is only reachable while a rule
+needs it.
+
+- **Hooks:** `route.created` and `route.deleted`. Each receives the rule (domain, port/upstream,
+  providers) and the target node. Hooks run after the rule's desired state is committed and are
+  driven by the event outbox (§9), never inline in the request.
+- **Contract:** like providers (§7.1), a plugin has a versioned Zod config schema, declared hooks
+  and `validate` / `apply` / `revert` lifecycle functions. `route.deleted` must undo what
+  `route.created` did, and both must be **idempotent** so retries are safe.
+- **Credentials:** cloud API tokens live in the plugin's encrypted config (§6.2) and are never
+  returned to the UI or written to logs.
+- **Failure handling:** a failing plugin does not roll back the rule. The run is recorded in
+  `plugin_runs`, retried with backoff, surfaced in the UI, and written to the audit log.
+- **Scope:** a plugin can be global or bound to a single node, so each firewall is only changed
+  for the host that actually serves the rule.
+- **Registry & PR gate:** plugins use the same registry and contract-test harness as providers
+  (§7.2, §7.3), so community plugins must pass fixtures (idempotent apply, correct revert, no side
+  effects outside the declared cloud resources) before merging.
+- **Permissions:** `plugins.read` to view, `plugins.write` to install, configure or enable them.
+
 ## 8. Config propagation & the agent
 
 - **App ↔ agent transport:** internal WebSocket (control channel). Agent connects out to the
@@ -178,6 +206,7 @@ capabilities, lifecycle hooks (`validate`, `apply`, `status`, `health`).
   agent reports). The agent runs a **reconciler**: diff desired vs live, compute minimal
   change, apply, reload nginx only when something actually changed, report back.
 - **Idempotency:** apply operations are pure/idempotent; safe to re-run.
+- Plugin hooks (§7.4) fire from the same outbox events once a rule change is committed.
 - Out-of-band drift (manual change on the host): agent detects, reports, and either restores
   or flags it (configurable) — never silently overwrites in the "flag" mode.
 
@@ -210,6 +239,7 @@ packages/core   — backend logic: registry, reconciler, RBAC, outbox
 packages/schemas — Zod schemas (shared, the single source)
 packages/keys    — secrets, JWT, encryption
 packages/providers/<pterodactyl|nginx|...>
+packages/plugins/<cloud-firewall|...>
 infra/          — docker-compose, migrations, agent image
 docs/           — this spec, ADRs, provider authoring guide
 ```
@@ -234,6 +264,7 @@ docs/           — this spec, ADRs, provider authoring guide
 6. Provider contract + registry + pterodactyl & nginx providers + contract test harness.
 7. Agent (WebSocket control channel + reconciler) on nginx host.
 8. Rules CRUD wired end-to-end (UI → core → agent → nginx).
+   8b. Plugin system + first cloud-firewall plugin (runs on `route.created` / `route.deleted`).
 9. Event outbox + audit log UI.
 10. External API keys (self-serve key manager UI) + `/api/v1` routes + OpenAPI.
 11. Stats collection + retention.

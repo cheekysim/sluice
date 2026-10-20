@@ -2,8 +2,10 @@ import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { role } from '$lib/server/db/auth.schema';
+import { requirePermission } from '$lib/server/permissions';
 
 export const load = (async ({ locals, depends }) => {
+	await requirePermission(locals, 'roles.manage');
 	depends('app:roles');
 
 	const rawRoles = await locals.db.query.role.findMany({
@@ -31,6 +33,7 @@ export const load = (async ({ locals, depends }) => {
 
 export const actions = {
 	deleteRole: async ({ request, locals }) => {
+		await requirePermission(locals, 'roles.manage');
 		const id = Number((await request.formData()).get('id'));
 		if (!Number.isInteger(id) || id <= 0) return fail(400, { message: 'Invalid role' });
 

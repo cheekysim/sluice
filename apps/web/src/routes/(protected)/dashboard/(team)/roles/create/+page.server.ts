@@ -4,14 +4,19 @@ import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { roleSchema } from '../schema';
 import { saveRole } from '../save-role.server';
+import { requirePermission } from '$lib/server/permissions';
 
-export const load: PageServerLoad = async ({ locals }) => ({
-	form: await superValidate(zod4(roleSchema)),
-	permissions: await locals.db.query.permission.findMany({ orderBy: { action: 'asc' } })
-});
+export const load: PageServerLoad = async ({ locals }) => {
+	await requirePermission(locals, 'roles.manage');
+	return {
+		form: await superValidate(zod4(roleSchema)),
+		permissions: await locals.db.query.permission.findMany({ orderBy: { action: 'asc' } })
+	};
+};
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
+		await requirePermission(locals, 'roles.manage');
 		const form = await superValidate(request, zod4(roleSchema));
 		if (!form.valid) return fail(400, { form });
 

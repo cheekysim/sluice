@@ -3,8 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Invite } from './columns.js';
 import { invite } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { requirePermission } from '$lib/server/permissions';
 
 export const load = (async ({ locals, depends }) => {
+	await requirePermission(locals, 'users.manage');
 	depends('app:invites');
 
 	const { db } = locals;
@@ -44,6 +46,7 @@ export const load = (async ({ locals, depends }) => {
 
 export const actions = {
 	deleteInvite: async ({ request, locals }) => {
+		await requirePermission(locals, 'users.manage');
 		const data = await request.formData();
 		const id = data.get('id');
 		if (typeof id !== 'string') return { success: false };
@@ -53,6 +56,7 @@ export const actions = {
 		return { success: true };
 	},
 	regenInvite: async ({ request, locals }) => {
+		await requirePermission(locals, 'users.manage');
 		const { db } = locals;
 		const data = await request.formData();
 		const id = data.get('id');

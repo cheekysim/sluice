@@ -2,8 +2,10 @@ import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { user } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { requirePermission } from '$lib/server/permissions';
 
 export const load = (async ({ locals, depends }) => {
+	await requirePermission(locals, 'users.manage');
 	depends('app:users');
 
 	const rows = await locals.db.query.user.findMany({
@@ -17,6 +19,7 @@ export const load = (async ({ locals, depends }) => {
 
 export const actions = {
 	deleteUser: async ({ request, locals }) => {
+		await requirePermission(locals, 'users.manage');
 		const id = (await request.formData()).get('id');
 		if (typeof id !== 'string') return fail(400, { success: false });
 
