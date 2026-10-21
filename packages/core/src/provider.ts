@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { DeployedDelta, CurrentState } from "./reconcile.js";
 
 export interface Capabilities {
   transports: ("tcp" | "udp" | "tls" | "url-prefix")[];
@@ -13,8 +14,8 @@ export interface Provider<TConfig extends object> {
   readonly capabilities: Capabilities;
 
   validate(config: TConfig): Promise<void>;
-  apply(config: TConfig): Promise<void>;
-  status(): Promise<unknown>;
+  apply(delta: DeployedDelta): Promise<void>;
+  status(): Promise<CurrentState>;
   health(): Promise<boolean>;
 }
 

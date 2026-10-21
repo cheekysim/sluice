@@ -16,7 +16,8 @@
   "type": "module",
   "dependencies": {
     "@sluice/core": "workspace:*",
-    "@sluice/provider-pterodactyl": "workspace:*"
+    "@sluice/provider-pterodactyl": "workspace:*",
+    "@sluice/provider-nginx": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
