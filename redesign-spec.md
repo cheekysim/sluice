@@ -145,6 +145,7 @@ per-route role checks.
   key rotation). Never log secrets or tokens.
 
 ### 6.3 External API keys
+
 - `pk_` + random secret, only the **hash** stored; shown once at creation.
 - Scoped to permissions; optional network allowlist; expiry; per-key rate limit.
 - Actions attributed in audit log to "key `name` (owner: user)".
@@ -152,6 +153,7 @@ per-route role checks.
 ## 7. Provider system (community extensible)
 
 ### 7.1 Two provider kinds, one contract
+
 - **Backend providers** (e.g. Pterodactyl): wrap a backend app's API — ports, instances,
   resource state — so rules can point at real backends.
 - **Frontend proxy providers** (e.g. nginx): what actually receives traffic and where rules
@@ -161,6 +163,7 @@ Both type-checked against a single **`Provider` interface**: typed config schema
 capabilities, lifecycle hooks (`validate`, `apply`, `status`, `health`).
 
 ### 7.2 Versioned config schemas + contract tests
+
 - Each provider ships a **versioned Zod config schema** stored in `config_schemas`.
 - A bundled **contract/fixture test harness** runs a provider against canned fixtures and
   asserts: schema validates, apply is idempotent, validate rejects bad config, no side
@@ -169,11 +172,13 @@ capabilities, lifecycle hooks (`validate`, `apply`, `status`, `health`).
   backward-compatible (or bumps). This is what makes community code safe to merge.
 
 ### 7.3 Registry
+
 - Registry maps `type → provider implementation + schema`. Defaults: backend = pterodactyl,
   frontend = nginx. Third-party types load from enabled packages; unknown types are refused
   with a clear validation error.
 
 ### 7.4 Plugins
+
 Plugins are modules that run on **route lifecycle events** — when a rule is created or deleted —
 to perform side effects outside the proxy itself. The primary use case is calling **cloud
 provider APIs** (e.g. AWS, Hetzner, DigitalOcean, Cloudflare) to open or close **firewall
