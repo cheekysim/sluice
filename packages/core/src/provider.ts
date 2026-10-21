@@ -1,11 +1,5 @@
 import { z } from "zod";
 
-export const schema = z.object({
-  baseUrl: z.string(),
-  apiKey: z.string(),
-  timeoutSeconds: z.number()
-});
-
 export interface Capabilities {
   transports: ("tcp" | "udp" | "tls" | "url-prefix")[];
   readonly?: boolean;

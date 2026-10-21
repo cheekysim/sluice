@@ -17,7 +17,10 @@ export class Registry {
       throw new Error(`Provider type ${p.type} already registered`);
     }
     this.entries.set(p.type, p);
-    this.schemas.set(p.type, [...(this.schemas.get(p.type) ?? [])]);
+    this.schemas.set(p.type, [
+      ...(this.schemas.get(p.type) ?? []),
+      { version, schema: p.configSchema },
+    ]);
   }
 
   get(type: string): AnyProvider {
