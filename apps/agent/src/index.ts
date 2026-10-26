@@ -1,3 +1,4 @@
+import type { RuleDesired } from "@sluice/core";
 import { reconcile, registry, computeDelta } from "@sluice/core";
 
 import { register as pterodactyl } from "@sluice/provider-pterodactyl";
@@ -11,24 +12,18 @@ console.log("Reconcile Test: ");
 const nginxProvider = registry.get("nginx");
 console.log(nginxProvider);
 
-const testRules = [
+const testRules: RuleDesired[] = [
   {
     id: "1",
-    domain: "cheekysim.com",
-    upstream: { host: "127.0.0.1", port: 80 },
-    enabled: true,
+    upstream: { host: "10.0.10.30", port: 80, protocol: ["tcp"] },
   },
   {
     id: "2",
-    domain: "cheekysim.com",
-    upstream: { host: "127.0.0.1", port: 443 },
-    enabled: true,
+    upstream: { host: "10.0.10.30", port: 443, protocol: ["tcp"] },
   },
   {
     id: "3",
-    domain: "cheekysim.com",
-    upstream: { host: "127.0.0.1", port: 8080 },
-    enabled: true,
+    upstream: { host: "10.0.10.30", port: 25565, protocol: ["tcp"] },
   },
 ];
 
@@ -45,52 +40,5 @@ await reconcile(
 );
 
 console.log("Reconcile Complete");
-console.log("Current State: ");
-console.log(JSON.stringify(await nginxProvider.status(), null, 2));
-
-await reconcile(
-  {
-    rules: testRules,
-  },
-  nginxProvider.status,
-  computeDelta,
-  nginxProvider.apply,
-);
-
-console.log("Reconcile 2 Complete");
-
-console.log("Current State: ");
-console.log(JSON.stringify(await nginxProvider.status(), null, 2));
-
-await reconcile(
-  {
-    rules: [
-      {
-        id: "1",
-        domain: "cheekysim.com",
-        upstream: { host: "127.0.0.1", port: 80 },
-        enabled: false,
-      },
-      {
-        id: "2",
-        domain: "cheekysim.com",
-        upstream: { host: "127.0.0.1", port: 443 },
-        enabled: true,
-      },
-      {
-        id: "3",
-        domain: "cheekysim.com",
-        upstream: { host: "127.0.0.1", port: 8080 },
-        enabled: true,
-      },
-    ],
-  },
-  nginxProvider.status,
-  computeDelta,
-  nginxProvider.apply,
-);
-
-console.log("Reconcile 3 Complete");
-
 console.log("Current State: ");
 console.log(JSON.stringify(await nginxProvider.status(), null, 2));

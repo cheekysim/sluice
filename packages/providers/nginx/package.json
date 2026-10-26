@@ -15,5 +15,9 @@
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "execa": "^10.2.1"
   }
 }

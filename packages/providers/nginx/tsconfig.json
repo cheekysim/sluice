@@ -17,7 +17,10 @@
     "moduleResolution": "nodenext",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false
+    "noEmit": false,
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "src/**/*"

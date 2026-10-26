@@ -1,8 +1,10 @@
 export interface RuleDesired {
   id: string;
-  domain: string;
-  upstream: { host: string; port: number };
-  enabled: boolean;
+  upstream: {
+    host: string;
+    port: number;
+    protocol: ("tcp" | "udp")[];
+  };
 }
 
 export type Operation =
@@ -30,7 +32,7 @@ export async function reconcile(
     desired: DesiredState,
     current: CurrentState,
   ) => Promise<DeployedDelta>,
-  apply: (delta: DeployedDelta) => Promise<void>, // provider.apply(delta)
+  apply: (delta: DeployedDelta) => Promise<void>,
 ): Promise<DeployedDelta> {
   const current = await observe();
   const delta = await diff(desired, current);
