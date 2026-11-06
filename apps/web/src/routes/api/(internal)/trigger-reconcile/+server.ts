@@ -1,8 +1,8 @@
 import { NatsError, StringCodec, type NatsConnection } from 'nats';
 import { json } from '@sveltejs/kit';
 import { RULE_PROVIDERS } from '$lib/rule-providers';
-import { getNats } from '$lib/server/nats';
-// import { requirePermission } from '$lib/server/permissions.js';
+import { getNats, trackTask } from '$lib/server/nats';
+import { requirePermission } from '$lib/server/permissions.js';
 
 const sc = StringCodec();
 
@@ -23,7 +23,9 @@ async function ensureTaskStream(jsm: Awaited<ReturnType<NatsConnection['jetstrea
 		try {
 			const stream = await jsm.streams.info('TASKS');
 			if (!stream.config.subjects?.includes('agent.task.>')) {
-				throw new Error('JetStream stream "TASKS" must include subject "agent.task.>"');
+				throw new Error('JetStream stream "TASKS" must include subject "agent.task.>"', {
+					cause: addError
+				});
 			}
 		} catch (verifyError) {
 			if (verifyError instanceof NatsError && verifyError.api_error?.code === 404) {
@@ -35,7 +37,7 @@ async function ensureTaskStream(jsm: Awaited<ReturnType<NatsConnection['jetstrea
 }
 
 export async function POST({ locals }) {
-	// TODO: await requirePermission(locals, 'PERMISSION');
+	await requirePermission(locals, 'rules.write');
 	console.log('Triggering reconcile task');
 
 	const nc = await getNats();
@@ -45,15 +47,16 @@ export async function POST({ locals }) {
 
 	// Construct the payload for the reconcile task
 	const rules = await locals.db.query.rule.findMany();
-	const providers = {
-		proxy: Object.fromEntries(
-			RULE_PROVIDERS.map(({ type }) => [
-				type,
-				rules.filter((rule) => rule.providers.includes(type)).map((rule) => rule.id)
-			])
-		)
-	};
+	const providers = Object.fromEntries(
+		RULE_PROVIDERS.map(({ type }) => [
+			type,
+			rules.filter((rule) => rule.providers.includes(type)).map((rule) => rule.id)
+		])
+	);
+
 	const payload = sc.encode(JSON.stringify({ taskId, action: 'reconcile', providers, rules }));
+
+	await trackTask(taskId);
 
 	// Publish asynchronously to JetStream instead of waiting for a reply
 	await js.publish('agent.task.reconcile', payload);

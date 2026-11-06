@@ -9,7 +9,7 @@
 	let deleteDialogOpen = $state(false);
 </script>
 
-<div class="flex justify-end gap-1">
+<div class="flex shrink justify-end gap-1">
 	<Button
 		variant="ghost"
 		size="icon"

@@ -1,5 +1,6 @@
 import { connect, StringCodec, type NatsConnection } from "nats";
 import { env } from "$env/dynamic/private";
+import { getTaskResult } from "$lib/server/nats";
 
 const sc = StringCodec();
 let ncPromise: Promise<NatsConnection> | undefined;
@@ -19,6 +20,14 @@ export async function GET({ params }) {
 
   const stream = new ReadableStream({
     async start(controller) {
+      // Prefer the result tracked at queue time; it may already have arrived
+      const tracked = getTaskResult(taskId);
+      if (tracked) {
+        controller.enqueue(`data: ${await tracked}\n\n`);
+        controller.close();
+        return;
+      }
+
       // Subscribe to the specific task's completion subject
       const sub = nc.subscribe(`task.done.${taskId}`);
 

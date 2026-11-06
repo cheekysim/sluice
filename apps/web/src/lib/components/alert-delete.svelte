@@ -44,6 +44,7 @@
 						{action}
 						use:enhance={() =>
 							async ({ result, update }) => {
+								if (result.type === 'success') open = false;
 								if (result.type === 'failure' && typeof result.data?.message === 'string') {
 									toast.error(result.data.message);
 								}

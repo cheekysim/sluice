@@ -92,20 +92,20 @@ const messages = await consumer.consume();
 
 for await (const msg of messages) {
   const payload = JSON.parse(sc.decode(msg.data));
-  console.log(`Processing offline-capable task:`, payload);
+  console.log(`Processing offline-capable task:`, JSON.stringify(payload, null,2));
 
   if (payload.action === "reconcile") {
     try {
-      const proxyProviderRules = payload.providers?.proxy;
-      if (!proxyProviderRules || typeof proxyProviderRules !== "object") {
-        throw new Error("Reconcile task is missing providers.proxy");
+      const providerRules = payload.providers;
+      if (!providerRules || typeof providerRules !== "object") {
+        throw new Error("Reconcile task is missing providers");
       }
       for (const [providerType, ruleIds] of Object.entries(
-        proxyProviderRules,
+        providerRules,
       )) {
         if (!Array.isArray(ruleIds)) {
           throw new Error(
-            `Invalid rule assignments for proxy provider ${providerType}`,
+            `Invalid rule assignments for provider ${providerType}`,
           );
         }
         const proxyProvider = registry.get(providerType);

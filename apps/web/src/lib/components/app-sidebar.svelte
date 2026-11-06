@@ -3,9 +3,9 @@
 	import UsersIcon from '@tabler/icons-svelte/icons/users';
 	import ShieldIcon from '@tabler/icons-svelte/icons/shield';
 	import MailIcon from '@tabler/icons-svelte/icons/mail';
-	import PlugConnectedIcon from '@tabler/icons-svelte/icons/plug-connected';
+	// import PlugConnectedIcon from '@tabler/icons-svelte/icons/plug-connected';
 	import ServerIcon from '@tabler/icons-svelte/icons/server';
-	import PuzzleIcon from '@tabler/icons-svelte/icons/puzzle';
+	// import PuzzleIcon from '@tabler/icons-svelte/icons/puzzle';
 	import SettingsIcon from '@tabler/icons-svelte/icons/settings';
 	import DashboardIcon from '@tabler/icons-svelte/icons/dashboard';
 	import InnerShadowTopIcon from '@tabler/icons-svelte/icons/inner-shadow-top';
@@ -29,6 +29,29 @@
 			items: [{ title: 'Dashboard', url: '/dashboard', icon: DashboardIcon }]
 		},
 		{
+			label: 'Infrastructure',
+			items: [
+				// {
+				// 	title: 'Providers',
+				// 	url: '/dashboard/providers',
+				// 	icon: PlugConnectedIcon,
+				// 	permission: 'providers.read'
+				// },
+				{
+					title: 'Nodes',
+					url: '/dashboard/nodes',
+					icon: ServerIcon,
+					permission: 'nodes.read'
+				}
+				// {
+				// 	title: 'Plugins',
+				// 	url: '/dashboard/plugins',
+				// 	icon: PuzzleIcon,
+				// 	permission: 'plugins.read'
+				// }
+			]
+		},
+		{
 			label: 'Team',
 			items: [
 				{
@@ -48,29 +71,6 @@
 					url: '/dashboard/invites',
 					icon: MailIcon,
 					permission: 'users.manage'
-				}
-			]
-		},
-		{
-			label: 'Infrastructure',
-			items: [
-				{
-					title: 'Providers',
-					url: '/dashboard/providers',
-					icon: PlugConnectedIcon,
-					permission: 'providers.read'
-				},
-				{
-					title: 'Nodes',
-					url: '/dashboard/nodes',
-					icon: ServerIcon,
-					permission: 'nodes.read'
-				},
-				{
-					title: 'Plugins',
-					url: '/dashboard/plugins',
-					icon: PuzzleIcon,
-					permission: 'plugins.read'
 				}
 			]
 		},
