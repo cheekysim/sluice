@@ -1,10 +1,8 @@
 export interface RuleDesired {
   id: string;
-  upstream: {
-    host: string;
-    port: number;
-    protocol: ("tcp" | "udp")[];
-  };
+  host: string;
+  port: number;
+  protocol: ("tcp" | "udp")[];
 }
 
 export type Operation =
@@ -42,6 +40,10 @@ export async function reconcile(
   return delta;
 }
 
+/*
+Compute the delta between the desired and current state
+Returns the delta describing the changes needed to reconcile the current state with the desired state
+*/
 export async function computeDelta(
   desired: DesiredState,
   current: CurrentState,

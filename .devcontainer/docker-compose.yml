@@ -1,0 +1,55 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspaces/sluice:cached
+    command: sleep infinity
+    environment:
+      DATABASE_URL: postgres://sluice:sluice@db:5432/sluice
+      PGHOST: db
+      PGUSER: sluice
+      PGPASSWORD: sluice
+      PGDATABASE: sluice
+      NATS_URL: nats://nats:4222
+    depends_on:
+      db:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sluice
+      POSTGRES_PASSWORD: sluice
+      POSTGRES_DB: sluice
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sluice -d sluice"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nats:
+    image: nats:alpine
+    restart: unless-stopped
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ./nats.conf:/etc/nats/nats.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8222/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

@@ -13,22 +13,24 @@ import { join } from "node:path";
 import { z } from "zod";
 
 export const ConfigSchema = z.object({
-  configDir: z.string().min(1).default("/etc/nginx/streams-enabled"),
+  configDir: z.string().min(1).default("/app/providers/nginx"),
   reloadCmd: z.string().min(1).default("nginx -s reload"),
+  startCmd: z.string().min(1).default("nginx"),
+  testCmd: z
+    .string()
+    .min(1)
+    .default("nginx -t -c /app/providers/nginx/test.conf"),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
 
-const defaultConfig: Config = {
-  configDir: "/opt/nginx/streams-enabled",
-  reloadCmd: "nginx -s reload",
-};
-
+// Helper function
 const paths = (cfg: Config) => ({
   dispatchFile: join(cfg.configDir, "sluice.conf"),
   staging: join(cfg.configDir, "sluice.conf.staging"),
 });
 
+// Regex patterns
 const RULE_MARKER = /^#\s*sluice:rule\s+id=(\S+)\s*$/;
 const SERVER_BLOCK =
   /server\s*\{\s*listen\s+(\d+)(\s+udp)?\s*;\s*proxy_pass\s+([^\s:;]+):(\d+)\s*;/;
@@ -37,13 +39,11 @@ const SERVER_BLOCK =
 function renderModel(rules: RuleDesired[]): string {
   return rules
     .map((r) => {
-      const protocol = r.upstream.protocol; // ["tcp", "udp"]
-      const { host, port } = r.upstream;
+      const { host, port } = r;
+      const protocol = r.protocol.map((p) => p.toLowerCase());
       const lines = [`# sluice:rule id=${r.id}`];
       if (protocol.includes("tcp")) {
-        lines.push(
-          `server { listen ${port}; proxy_pass ${host}:${port}; }`,
-        );
+        lines.push(`server { listen ${port}; proxy_pass ${host}:${port}; }`);
       }
       if (protocol.includes("udp")) {
         lines.push(
@@ -70,17 +70,19 @@ function parseConfig(content: string): RuleDesired[] {
     const block = SERVER_BLOCK.exec(line);
     if (!block || !current) continue;
 
-    const [, , udp, host, upstreamPort] = block;
+    const [, , udp, host, port] = block;
     const protocol = udp ? "udp" : "tcp";
     const existing = rules.get(current.id);
     if (existing) {
-      if (!existing.upstream.protocol.includes(protocol)) {
-        existing.upstream.protocol.push(protocol);
+      if (!existing.protocol.includes(protocol)) {
+        existing.protocol.push(protocol);
       }
     } else {
       rules.set(current.id, {
         id: current.id,
-        upstream: { host, port: Number(upstreamPort), protocol: [protocol] },
+        host,
+        port: Number(port),
+        protocol: [protocol],
       });
     }
   }
@@ -102,51 +104,73 @@ async function mergeRules(
   return [...rules.values()];
 }
 
-export const nginx: Provider<Config> = {
-  type: "nginx",
-  name: "Nginx",
-  configSchema: ConfigSchema,
-  capabilities: {
-    transports: ["tcp", "udp"],
-  },
-  validate: async (delta: DeployedDelta) => {
-    console.log("Validate Config:", JSON.stringify(delta, null, 2));
-    const { dispatchFile, staging } = paths(defaultConfig);
-    const rendered = renderModel(await mergeRules(dispatchFile, delta));
-    await mkdir(defaultConfig.configDir, { recursive: true });
-    await writeFile(staging, rendered);
-    try {
-      await execa("nginx", ["-t", "-c", staging]);
-    } catch (err) {
-      throw new Error(`Validation failed: ${err}`);
-    } finally {
+// Create and test staging config
+async function stageConfig(
+  delta: DeployedDelta,
+  config: Config,
+): Promise<string> {
+  const { dispatchFile, staging } = paths(config);
+  const rendered = renderModel(await mergeRules(dispatchFile, delta));
+  await mkdir(config.configDir, { recursive: true });
+  await writeFile(staging, rendered);
+  const mockNginxFile = config.configDir + "/test.conf";
+  const mockNginxBlock = `pid /tmp/nginx_test.pid; load_module /usr/lib/nginx/modules/ngx_stream_module.so; events {} stream { include ${staging}; }`;
+  await writeFile(mockNginxFile, mockNginxBlock);
+  try {
+    await execa("nginx", ["-t", "-c", mockNginxFile]);
+    return staging;
+  } catch (err) {
+    await rm(staging, { force: true });
+    throw new Error(`Validation failed: ${err}`);
+  } finally {
+    await rm("/tmp/nginx_test.pid", { force: true });
+    await rm(mockNginxFile, { force: true });
+  }
+}
+
+export const createNginx = (input: Partial<Config> = {}): Provider<Config> => {
+  const config = ConfigSchema.parse(input);
+  return {
+    type: "nginx",
+    name: "Nginx",
+    configSchema: ConfigSchema,
+    capabilities: {
+      transports: ["tcp", "udp"],
+    },
+    validate: async (delta: DeployedDelta) => {
+      const staging = await stageConfig(delta, config);
       await rm(staging, { force: true });
-    }
-  },
-  apply: async (delta: DeployedDelta) => {
-    console.log("Apply Config:", JSON.stringify(delta, null, 2));
-    const { dispatchFile } = paths(defaultConfig);
-    const rendered = renderModel(await mergeRules(dispatchFile, delta));
-    await mkdir(defaultConfig.configDir, { recursive: true });
-    const tmp = `${dispatchFile}.tmp`;
-    await writeFile(tmp, rendered);
-    await rename(tmp, dispatchFile);
-    // const [cmd, ...args] = defaultConfig.reloadCmd.split(" ");
-    // await execa(cmd, args);
-  },
-  health: async () => {
-    return (
-      (await execa("nginx", ["-t"]).catch(() => ({ exitCode: 1 }))).exitCode ===
-      0
-    );
-  },
-  status: async (): Promise<CurrentState> => {
-    const { dispatchFile } = paths(defaultConfig);
-    const content = await readFile(dispatchFile, "utf-8").catch(() => "");
-    return { rules: parseConfig(content) };
-  },
+    },
+    apply: async (delta: DeployedDelta) => {
+      const staging = await stageConfig(delta, config);
+      const { dispatchFile } = paths(config);
+      await rename(staging, dispatchFile);
+      const [cmd, ...args] = config.reloadCmd.split(" ");
+      try {
+        await execa(cmd, args);
+      } catch (err) {
+        // Reload fails when nginx isn't running yet (no pid file); start it instead
+        const [startBin, ...startArgs] = config.startCmd.split(" ");
+        console.warn(`Reload failed, starting nginx: ${err}`);
+        await execa(startBin, startArgs);
+      }
+    },
+    health: async () => {
+      return (
+        (await execa("nginx", ["-t"]).catch(() => ({ exitCode: 1 })))
+          .exitCode === 0
+      );
+    },
+    status: async (): Promise<CurrentState> => {
+      const { dispatchFile } = paths(config);
+      const content = await readFile(dispatchFile, "utf-8").catch(() => "");
+      return { rules: parseConfig(content) };
+    },
+  };
 };
 
-export const register = (r: Registry) => {
-  r.register(nginx);
-};
+export const register =
+  (input: Partial<Config> = {}) =>
+  (r: Registry) => {
+    r.register(createNginx(input));
+  };

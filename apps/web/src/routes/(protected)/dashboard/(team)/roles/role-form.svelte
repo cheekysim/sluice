@@ -1,6 +1,8 @@
 <script lang="ts">
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { superForm, type SuperValidated, type Infer } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -89,16 +91,18 @@
 						<div class="space-y-2 rounded-md border p-3">
 							<h3 class="text-sm font-semibold">{group.label}</h3>
 							{#each group.items as permission (permission.id)}
-								<label class="flex items-center gap-2 text-sm">
-									<input
-										type="checkbox"
+								<Label class="flex items-center gap-2 text-sm font-normal">
+									<Checkbox
 										name="permissions"
-										value={permission.id}
-										class="size-4 accent-primary"
-										bind:group={$formData.permissions}
+										value={String(permission.id)}
+										checked={$formData.permissions.includes(permission.id)}
+										onCheckedChange={(checked) =>
+											($formData.permissions = checked
+												? [...new Set([...$formData.permissions, permission.id])]
+												: $formData.permissions.filter((id) => id !== permission.id))}
 									/>
 									{permission.label}
-								</label>
+								</Label>
 							{/each}
 						</div>
 					{/each}

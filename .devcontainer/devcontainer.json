@@ -1,0 +1,30 @@
+{
+	"name": "Dev Environment",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspaces/sluice",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"svelte.svelte-vscode",
+				"bradlc.vscode-tailwindcss",
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"svelte.svelte-vscode",
+				"christian-kohler.path-intellisense"
+			]
+		}
+	},
+	"features": {
+		"ghcr.io/devcontainer-config/features/dot-config:5": {}
+	},
+	"forwardPorts": [
+		5173,
+		5432,
+		4983,
+		4222,
+		8222
+	],
+	"postCreateCommand": "pnpm install && pnpm --filter web db:push --force && pnpm --filter web seed",
+	"remoteUser": "root"
+}

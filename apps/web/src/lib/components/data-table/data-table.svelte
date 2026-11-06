@@ -2,6 +2,7 @@
 	import { invalidate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { Pathname } from '$app/types';
+	import type { Snippet } from 'svelte';
 	import { cn } from '$lib/utils';
 	import { type ColumnDef, type RowData, createTable, FlexRender } from '@tanstack/svelte-table';
 	import * as Table from '$lib/components/ui/table';
@@ -27,6 +28,8 @@
 		createLabel?: string;
 		/** Optional boolean column filter exposed as a switch, e.g. "Show Accepted". */
 		toggleFilter?: { columnId: string; label: string };
+		/** Extra toolbar buttons rendered next to Refresh. */
+		actions?: Snippet;
 	};
 
 	let {
@@ -37,7 +40,8 @@
 		filterPlaceholder,
 		createHref,
 		createLabel,
-		toggleFilter
+		toggleFilter,
+		actions
 	}: DataTableProps<TData> = $props();
 
 	// Hide rows matching the toggle (e.g. accepted invites) until it is switched on.
@@ -105,6 +109,7 @@
 			<Button variant="secondary" onclick={refreshData} aria-label="Refresh">
 				<RefreshIcon class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
 			</Button>
+			{@render actions?.()}
 			{#if createHref}
 				<Button href={resolve(createHref)}><PlusIcon class="h-4 w-4" />{createLabel}</Button>
 			{/if}

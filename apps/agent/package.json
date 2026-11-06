@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "watch": "tsx watch src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "check": "tsc --noEmit",
     "build": "tsc",
     "start": "node dist/index.js"
@@ -16,11 +15,13 @@
   "type": "module",
   "dependencies": {
     "@sluice/core": "workspace:*",
+    "@sluice/provider-nginx": "workspace:*",
     "@sluice/provider-pterodactyl": "workspace:*",
-    "@sluice/provider-nginx": "workspace:*"
+    "nats": "^2.29.3"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "dotenv": "^18.0.9",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }

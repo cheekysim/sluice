@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "vite dev --host",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -20,6 +20,7 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes",
+		"seed": "tsx --env-file=.env src/lib/server/scripts/seed.ts",
 		"seed:admin": "tsx --env-file=.env src/lib/server/scripts/seed-admin.ts",
 		"seed:role": "tsx --env-file=.env src/lib/server/scripts/seed-role.ts",
 		"seed:permission": "tsx --env-file=.env src/lib/server/scripts/seed-permission.ts"
@@ -79,6 +80,7 @@
 	},
 	"dependencies": {
 		"mode-watcher": "^1.1.0",
+		"nats": "^2.29.3",
 		"uuid": "^14.0.2"
 	}
 }
