@@ -19,6 +19,16 @@ export interface Provider<TConfig extends object> {
   health(): Promise<boolean>;
 }
 
+export interface ProviderDefinition {
+  readonly type: string;
+  readonly name: string;
+  readonly implemented: boolean;
+  readonly capabilities: Capabilities;
+  readonly configSchema: z.ZodObject;
+  readonly exampleConfig: Record<string, unknown>;
+  create(config: unknown): Provider<object>;
+}
+
 export interface ProviderSchemaV<TConfig> {
   version: number;
   schema: z.ZodType<TConfig>;

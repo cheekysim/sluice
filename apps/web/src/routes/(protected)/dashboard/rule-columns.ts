@@ -3,23 +3,21 @@ import type { DataTableFeatures } from '$lib/components/data-table/features.js';
 import SortButton from '$lib/components/data-table/sort-button.svelte';
 import RuleDataTableActions from './rule-data-table-actions.svelte';
 import RuleProviderSelect from './rule-provider-select.svelte';
-import type { RuleProviderType } from '$lib/rule-providers';
 
 export type Rule = {
 	id: number;
 	host: string;
 	port: number;
 	protocol: ('TCP' | 'UDP')[];
-	providers: RuleProviderType[];
+	providers: string[];
 };
 
 const columnHelper = createColumnHelper<DataTableFeatures, Rule>();
 
 export const createRuleColumns = (
-	providers: readonly { type: RuleProviderType; name: string }[],
+	providers: readonly { type: string; name: string; available: boolean }[],
 	canWrite: boolean,
-	onEdit?: (rule: Rule) => void,
-	active: ReadonlySet<string> | null = null
+	onEdit?: (rule: Rule) => void
 ) =>
 	columnHelper.columns([
 		columnHelper.accessor('host', {
@@ -46,8 +44,7 @@ export const createRuleColumns = (
 				canWrite
 					? renderComponent(RuleProviderSelect, {
 							rule: row.original,
-							providers,
-							active
+							providers
 						})
 					: row.original.providers
 							.map((type) => providers.find((provider) => provider.type === type)?.name ?? type)

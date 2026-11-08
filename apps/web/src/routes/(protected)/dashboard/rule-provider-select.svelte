@@ -6,24 +6,20 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import type { Rule } from './rule-columns';
-	import type { RuleProviderType } from '$lib/rule-providers';
 
 	let {
 		rule,
-		providers,
-		active = null
+		providers
 	}: {
 		rule: Rule;
-		providers: readonly { type: RuleProviderType; name: string }[];
-		/** Provider types reported by live agents; null while unknown. */
-		active?: ReadonlySet<string> | null;
+		providers: readonly { type: string; name: string; available: boolean }[];
 	} = $props();
 
 	let selectedProviders = $derived([...rule.providers]);
 	let isSaving = $state(false);
 	let form: HTMLFormElement | undefined = $state();
 
-	const toggleProvider = async (provider: RuleProviderType, checked: boolean | 'indeterminate') => {
+	const toggleProvider = async (provider: string, checked: boolean | 'indeterminate') => {
 		if (checked === 'indeterminate') return;
 		selectedProviders = checked
 			? [...new Set([...selectedProviders, provider])]
@@ -73,16 +69,12 @@
 		{#each providers as provider (provider.type)}
 			<DropdownMenu.CheckboxItem
 				checked={selectedProviders.includes(provider.type)}
-				disabled={isSaving ||
-					(active !== null &&
-						!active.has(provider.type) &&
-						!selectedProviders.includes(provider.type))}
+				disabled={isSaving || (!provider.available && !selectedProviders.includes(provider.type))}
 				onCheckedChange={(checked) => toggleProvider(provider.type, checked)}
 			>
 				{provider.name}
-				{#if active !== null && !active.has(provider.type)}
-					<span class="text-xs text-muted-foreground">(no agent)</span>
-				{/if}
+				{#if !provider.available}<span class="text-xs text-muted-foreground">(not configured)</span
+					>{/if}
 			</DropdownMenu.CheckboxItem>
 		{/each}
 	</DropdownMenu.Content>

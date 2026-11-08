@@ -2,7 +2,6 @@
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 	import { toast } from 'svelte-sonner';
-	import { onMount } from 'svelte';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import RocketIcon from '@lucide/svelte/icons/rocket';
 	import { Button } from '$lib/components/ui/button';
@@ -13,7 +12,6 @@
 	let tasks = $state<Record<string, string>>({});
 	let ruleDialogOpen = $state(false);
 	let selectedRule = $state<Rule | null>(null);
-	let activeProviders = $state<Set<string> | null>(null);
 	const columns = $derived(
 		createRuleColumns(
 			data.ruleProviders,
@@ -23,24 +21,9 @@
 						selectedRule = rule;
 						ruleDialogOpen = true;
 					}
-				: undefined,
-			activeProviders
+				: undefined
 		)
 	);
-
-	// Best-effort: stays null (no restriction) when no agent answers
-	onMount(async () => {
-		try {
-			const res = await fetch('/api/agents');
-			if (!res.ok) return;
-			const { agents } = (await res.json()) as { agents: { providers: { type: string }[] }[] };
-			if (agents.length > 0) {
-				activeProviders = new Set(agents.flatMap((agent) => agent.providers.map((p) => p.type)));
-			}
-		} catch {
-			// Agent discovery is optional
-		}
-	});
 
 	async function startTask() {
 		const res = await fetch('/api/trigger-reconcile', {
@@ -63,7 +46,9 @@
 		sse.onmessage = (event) => {
 			const data = JSON.parse(event.data);
 			tasks[taskId] = `Complete! Result: ${data.status}`;
-			toast.success(`Task ${short} complete: ${data.status}`, { id: toastId });
+			if (data.status === 'success')
+				toast.success(`Task ${short} complete: ${data.status}`, { id: toastId });
+			else toast.error(`Task ${short}: ${data.status}`, { id: toastId });
 			sse.close();
 		};
 
@@ -105,10 +90,5 @@
 </div>
 
 {#if data.canWrite}
-	<RuleDialog
-		bind:open={ruleDialogOpen}
-		rule={selectedRule}
-		providers={data.ruleProviders}
-		active={activeProviders}
-	/>
+	<RuleDialog bind:open={ruleDialogOpen} rule={selectedRule} providers={data.ruleProviders} />
 {/if}

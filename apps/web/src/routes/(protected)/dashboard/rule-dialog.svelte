@@ -5,32 +5,29 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Label } from '$lib/components/ui/label';
-	import type { RuleProviderType } from '$lib/rule-providers';
 
 	type Rule = {
 		id: number;
 		host: string;
 		port: number;
 		protocol: ('TCP' | 'UDP')[];
-		providers: RuleProviderType[];
+		providers: string[];
 	};
 
 	let {
 		open = $bindable(false),
 		rule,
-		providers,
-		active = null
+		providers
 	}: {
 		open?: boolean;
 		rule: Rule | null;
-		providers: readonly { type: RuleProviderType; name: string }[];
-		active?: ReadonlySet<string> | null;
+		providers: readonly { type: string; name: string; available: boolean }[];
 	} = $props();
 
 	let host = $state('');
 	let port = $state<number | undefined>(undefined);
 	let protocols = $state<('TCP' | 'UDP')[]>([]);
-	let selectedProviders = $state<RuleProviderType[]>([]);
+	let selectedProviders = $state<string[]>([]);
 
 	const toggle = <T,>(list: T[], item: T, checked: boolean) =>
 		checked ? [...new Set([...list, item])] : list.filter((entry) => entry !== item);
@@ -40,7 +37,9 @@
 		host = rule?.host ?? '';
 		port = rule?.port;
 		protocols = rule ? [...rule.protocol] : ['TCP'];
-		selectedProviders = rule ? [...rule.providers] : providers.map((p) => p.type);
+		selectedProviders = rule
+			? [...rule.providers]
+			: providers.filter((p) => p.available).map((p) => p.type);
 	});
 </script>
 
@@ -123,14 +122,15 @@
 								<Checkbox
 									name="provider"
 									value={provider.type}
+									disabled={!provider.available && !selectedProviders.includes(provider.type)}
 									checked={selectedProviders.includes(provider.type)}
 									onCheckedChange={(checked) =>
 										(selectedProviders = toggle(selectedProviders, provider.type, checked))}
 								/>
 								{provider.name}
-								{#if active !== null && !active.has(provider.type)}
-									<span class="text-xs text-muted-foreground">(no agent)</span>
-								{/if}
+								{#if !provider.available}<span class="text-xs text-muted-foreground"
+										>(not configured)</span
+									>{/if}
 							</Label>
 						{/each}
 					</div>

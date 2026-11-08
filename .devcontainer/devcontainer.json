@@ -11,7 +11,8 @@
 				"dbaeumer.vscode-eslint",
 				"esbenp.prettier-vscode",
 				"svelte.svelte-vscode",
-				"christian-kohler.path-intellisense"
+				"christian-kohler.path-intellisense",
+				"Selemondev.vscode-shadcn-svelte"
 			]
 		}
 	},

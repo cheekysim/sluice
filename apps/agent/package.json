@@ -4,8 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "generate:providers": "node scripts/generate-providers.mjs",
+    "check:providers": "node scripts/check-providers.mjs",
+    "test:providers": "pnpm generate:providers && node --import tsx --test test/providers.test.ts test/provider-contract.test.ts test/provider-scaffold.test.ts",
+    "predev": "pnpm generate:providers",
     "dev": "tsx watch src/index.ts",
+    "precheck": "pnpm generate:providers && pnpm check:providers",
     "check": "tsc --noEmit",
+    "prebuild": "pnpm generate:providers && pnpm check:providers",
     "build": "tsc",
     "start": "node dist/index.js"
   },
@@ -17,7 +23,8 @@
     "@sluice/core": "workspace:*",
     "@sluice/provider-nginx": "workspace:*",
     "@sluice/provider-pterodactyl": "workspace:*",
-    "nats": "^2.29.3"
+    "nats": "^2.29.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

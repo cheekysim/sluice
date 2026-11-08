@@ -1,32 +1,74 @@
-import { json } from '@sveltejs/kit';
-import { RequestStrategy, StringCodec } from 'nats';
+import { error, json } from '@sveltejs/kit';
+import { ErrorCode, NatsError, RequestStrategy, StringCodec } from 'nats';
 import { getNats } from '$lib/server/nats';
 import { requirePermission } from '$lib/server/permissions';
 import type { RequestHandler } from './$types';
+import { agent } from '$lib/server/db/schema';
+import { sql } from 'drizzle-orm';
 
 const sc = StringCodec();
 
-/** Asks every connected agent which providers it has registered. */
+/** Asks every connected agent for its details. The saved name is the desired configuration. */
 export const GET: RequestHandler = async ({ locals }) => {
-	await requirePermission(locals, 'rules.read');
+	await requirePermission(locals, 'nodes.read');
 
-	const agents: unknown[] = [];
+	const agents: { agentId: string; agentName: string; agentIP: string; agentVersion: string }[] =
+		[];
 	try {
 		const nc = await getNats();
-		const replies = await nc.requestMany('agent.query.providers', sc.encode(''), {
+		const replies = await nc.requestMany('agent.query', sc.encode(''), {
 			strategy: RequestStrategy.Timer,
 			maxWait: 1500
 		});
 		for await (const reply of replies) {
-			try {
-				agents.push(JSON.parse(sc.decode(reply.data)));
-			} catch {
-				// Ignore malformed replies
-			}
+			const value: unknown = JSON.parse(sc.decode(reply.data));
+			if (
+				!value ||
+				typeof value !== 'object' ||
+				!('agentId' in value) ||
+				typeof value.agentId !== 'string' ||
+				!('agentName' in value) ||
+				typeof value.agentName !== 'string' ||
+				!('agentIP' in value) ||
+				typeof value.agentIP !== 'string' ||
+				!('agentVersion' in value) ||
+				typeof value.agentVersion !== 'string'
+			)
+				throw new Error('Invalid agent discovery response');
+			agents.push({
+				agentId: value.agentId,
+				agentName: value.agentName,
+				agentIP: value.agentIP,
+				agentVersion: value.agentVersion
+			});
 		}
-	} catch {
-		// No responders or NATS unavailable: report no agents
+	} catch (err) {
+		if (err instanceof NatsError && err.code === ErrorCode.NoResponders) {
+			return json({ agents: [] });
+		}
+		console.error('Failed to query agents:', err);
+		error(503, 'Failed to query agents');
 	}
 
-	return json({ agents });
+	if (agents.length === 0) return json({ agents });
+
+	// Save agents to db
+	const savedAgents = await locals.db
+		.insert(agent)
+		.values(agents)
+		.onConflictDoUpdate({
+			target: agent.agentId,
+			set: {
+				agentIP: sql`excluded."agentIP"`,
+				agentVersion: sql`excluded."agentVersion"`
+			}
+		})
+		.returning({
+			agentId: agent.agentId,
+			agentName: agent.agentName,
+			agentIP: agent.agentIP,
+			agentVersion: agent.agentVersion
+		});
+
+	return json({ agents: savedAgents });
 };

@@ -4,6 +4,7 @@ import type {
   RuleDesired,
   CurrentState,
   DeployedDelta,
+  ProviderDefinition,
 } from "@sluice/core";
 
 import { execa } from "execa";
@@ -13,16 +14,23 @@ import { join } from "node:path";
 import { z } from "zod";
 
 export const ConfigSchema = z.object({
-  configDir: z.string().min(1).default("/app/providers/nginx"),
-  reloadCmd: z.string().min(1).default("nginx -s reload"),
-  startCmd: z.string().min(1).default("nginx"),
+  configDir: z.string().trim().min(1).default("/app/providers/nginx"),
+  reloadCmd: z.string().trim().min(1).default("nginx -s reload"),
+  startCmd: z.string().trim().min(1).default("nginx"),
   testCmd: z
     .string()
+    .trim()
     .min(1)
-    .default("nginx -t -c /app/providers/nginx/test.conf"),
+    .describe(
+      "Validation command; the generated test configuration path is appended.",
+    )
+    .default("nginx -t -c"),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
+const capabilities = {
+  transports: ["tcp", "udp"],
+} satisfies ProviderDefinition["capabilities"];
 
 // Helper function
 const paths = (cfg: Config) => ({
@@ -34,6 +42,16 @@ const paths = (cfg: Config) => ({
 const RULE_MARKER = /^#\s*sluice:rule\s+id=(\S+)\s*$/;
 const SERVER_BLOCK =
   /server\s*\{\s*listen\s+(\d+)(\s+udp)?\s*;\s*proxy_pass\s+([^\s:;]+):(\d+)\s*;/;
+
+async function readRulesFile(file: string): Promise<string> {
+  try {
+    return await readFile(file, "utf-8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+      return "";
+    throw error;
+  }
+}
 
 // Convert RuleDesired[] to nginx config
 function renderModel(rules: RuleDesired[]): string {
@@ -95,7 +113,7 @@ async function mergeRules(
   file: string,
   delta: DeployedDelta,
 ): Promise<RuleDesired[]> {
-  const content = await readFile(file, "utf-8").catch(() => "");
+  const content = await readRulesFile(file);
   const rules = new Map(parseConfig(content).map((r) => [r.id, r]));
   for (const op of delta.ops) {
     if (op.op === "upsert") rules.set(op.rule.id, op.rule);
@@ -113,17 +131,20 @@ async function stageConfig(
   const rendered = renderModel(await mergeRules(dispatchFile, delta));
   await mkdir(config.configDir, { recursive: true });
   await writeFile(staging, rendered);
-  const mockNginxFile = config.configDir + "/test.conf";
-  const mockNginxBlock = `pid /tmp/nginx_test.pid; load_module /usr/lib/nginx/modules/ngx_stream_module.so; events {} stream { include ${staging}; }`;
+  const testId = crypto.randomUUID();
+  const mockNginxFile = join(config.configDir, `sluice-test-${testId}.conf`);
+  const testPidFile = join(config.configDir, `sluice-test-${testId}.pid`);
+  const mockNginxBlock = `pid ${testPidFile}; load_module /usr/lib/nginx/modules/ngx_stream_module.so; events {} stream { include ${staging}; }`;
   await writeFile(mockNginxFile, mockNginxBlock);
   try {
-    await execa("nginx", ["-t", "-c", mockNginxFile]);
+    const [testBin, ...testArgs] = config.testCmd.split(" ");
+    await execa(testBin, [...testArgs, mockNginxFile]);
     return staging;
   } catch (err) {
     await rm(staging, { force: true });
     throw new Error(`Validation failed: ${err}`);
   } finally {
-    await rm("/tmp/nginx_test.pid", { force: true });
+    await rm(testPidFile, { force: true });
     await rm(mockNginxFile, { force: true });
   }
 }
@@ -134,9 +155,7 @@ export const createNginx = (input: Partial<Config> = {}): Provider<Config> => {
     type: "nginx",
     name: "Nginx",
     configSchema: ConfigSchema,
-    capabilities: {
-      transports: ["tcp", "udp"],
-    },
+    capabilities,
     validate: async (delta: DeployedDelta) => {
       const staging = await stageConfig(delta, config);
       await rm(staging, { force: true });
@@ -163,7 +182,7 @@ export const createNginx = (input: Partial<Config> = {}): Provider<Config> => {
     },
     status: async (): Promise<CurrentState> => {
       const { dispatchFile } = paths(config);
-      const content = await readFile(dispatchFile, "utf-8").catch(() => "");
+      const content = await readRulesFile(dispatchFile);
       return { rules: parseConfig(content) };
     },
   };
@@ -174,3 +193,13 @@ export const register =
   (r: Registry) => {
     r.register(createNginx(input));
   };
+
+export const providerDefinition: ProviderDefinition = {
+  type: "nginx",
+  name: "Nginx",
+  implemented: true,
+  capabilities,
+  configSchema: ConfigSchema,
+  exampleConfig: {},
+  create: (config) => createNginx(ConfigSchema.parse(config)),
+};

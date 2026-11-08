@@ -1,4 +1,4 @@
-import { Provider, ProviderSchemaV } from "./provider.js";
+import type { Provider, ProviderSchemaV } from "./provider.js";
 
 export class ProviderNotFoundError extends Error {
   constructor(readonly providerType: string) {

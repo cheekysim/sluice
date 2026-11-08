@@ -3,17 +3,18 @@ import { fail } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { rule } from '$lib/server/db/rule.schema';
 import { hasPermission, requirePermission } from '$lib/server/permissions';
-import { RULE_PROVIDERS } from '$lib/rule-providers';
+import { ruleProviderOptions } from '$lib/server/rule-providers';
 
 export const load: PageServerLoad = async ({ locals, depends }) => {
 	await requirePermission(locals, 'rules.read');
 	depends('app:rules');
 
 	const rules = await locals.db.query.rule.findMany({ orderBy: { host: 'asc' } });
+	const nodes = await locals.db.query.agent.findMany();
 	return {
 		rules,
 		canWrite: await hasPermission(locals, 'rules.write'),
-		ruleProviders: RULE_PROVIDERS
+		ruleProviders: ruleProviderOptions(nodes, rules)
 	};
 };
 
@@ -44,9 +45,16 @@ export const actions = {
 		}
 
 		const requestedProviders = formData.getAll('provider');
+		const rules = await locals.db.query.rule.findMany();
+		const options = ruleProviderOptions(await locals.db.query.agent.findMany(), rules);
+		const existing =
+			id === undefined ? [] : (rules.find((rule) => rule.id === id)?.providers ?? []);
 		const selectedProviders = requestedProviders.filter(
-			(provider): provider is (typeof RULE_PROVIDERS)[number]['type'] =>
-				RULE_PROVIDERS.some((option) => option.type === provider)
+			(provider): provider is string =>
+				typeof provider === 'string' &&
+				options.some(
+					(option) => option.type === provider && (option.available || existing.includes(provider))
+				)
 		);
 		if (selectedProviders.length !== requestedProviders.length) {
 			return fail(400, { message: 'Invalid provider selection' });
@@ -79,9 +87,15 @@ export const actions = {
 
 		if (!Number.isInteger(id) || id <= 0) return fail(400, { message: 'Invalid rule' });
 
+		const rules = await locals.db.query.rule.findMany();
+		const options = ruleProviderOptions(await locals.db.query.agent.findMany(), rules);
+		const existing = rules.find((rule) => rule.id === id)?.providers ?? [];
 		const selectedProviders = requestedProviders.filter(
-			(provider): provider is (typeof RULE_PROVIDERS)[number]['type'] =>
-				RULE_PROVIDERS.some((option) => option.type === provider)
+			(provider): provider is string =>
+				typeof provider === 'string' &&
+				options.some(
+					(option) => option.type === provider && (option.available || existing.includes(provider))
+				)
 		);
 		if (selectedProviders.length !== requestedProviders.length) {
 			return fail(400, { message: 'Invalid provider selection' });

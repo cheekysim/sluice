@@ -1,5 +1,10 @@
 export { registry, Registry, ProviderNotFoundError } from "./registry.js";
-export type { Provider, Capabilities, ProviderSchemaV } from "./provider.js";
+export type {
+  Provider,
+  ProviderDefinition,
+  Capabilities,
+  ProviderSchemaV,
+} from "./provider.js";
 export type {
   RuleDesired,
   DesiredState,

@@ -15,12 +15,11 @@
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import RefreshIcon from '@lucide/svelte/icons/refresh-cw';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import { Spinner } from '$lib/components/ui/spinner';
 
 	type DataTableProps<TData extends RowData> = {
 		columns: ColumnDef<DataTableFeatures, TData>[];
 		data: TData[];
-		/** Dependency key registered by the page's `load` with `depends()`. */
-		refreshKey: string;
 		/** Column the text filter applies to. */
 		filterColumn: string;
 		filterPlaceholder: string;
@@ -30,18 +29,26 @@
 		toggleFilter?: { columnId: string; label: string };
 		/** Extra toolbar buttons rendered next to Refresh. */
 		actions?: Snippet;
-	};
+		loading?: boolean;
+		errorMessage?: string | null;
+	} & (
+		| { refreshKey: string; onRefresh?: never }
+		| { refreshKey?: never; onRefresh: () => Promise<void> }
+	);
 
 	let {
 		data,
 		columns,
 		refreshKey,
+		onRefresh,
 		filterColumn,
 		filterPlaceholder,
 		createHref,
 		createLabel,
 		toggleFilter,
-		actions
+		actions,
+		loading = false,
+		errorMessage = null
 	}: DataTableProps<TData> = $props();
 
 	// Hide rows matching the toggle (e.g. accepted invites) until it is switched on.
@@ -74,7 +81,11 @@
 		if (isRefreshing) return;
 		isRefreshing = true;
 		try {
-			await invalidate(refreshKey);
+			if (onRefresh) {
+				await onRefresh();
+			} else if (refreshKey) {
+				await invalidate(refreshKey);
+			}
 		} finally {
 			isRefreshing = false;
 		}
@@ -92,6 +103,9 @@
 				}}
 				class="max-w-sm"
 			/>
+			{#if loading}
+				<Spinner />
+			{/if}
 			{#if toggleFilter}
 				<div class="flex items-center gap-2">
 					<Switch
@@ -106,7 +120,12 @@
 			{/if}
 		</div>
 		<div class="flex flex-row items-center gap-2">
-			<Button variant="secondary" onclick={refreshData} aria-label="Refresh">
+			<Button
+				variant="secondary"
+				onclick={refreshData}
+				aria-label="Refresh"
+				disabled={loading || isRefreshing}
+			>
 				<RefreshIcon class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
 			</Button>
 			{@render actions?.()}
@@ -116,7 +135,7 @@
 		</div>
 	</div>
 	<div class="rounded-md border px-4 py-2">
-		<Table.Root>
+		<Table.Root aria-busy={loading}>
 			<Table.Header>
 				{#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
 					<Table.Row>
@@ -131,19 +150,27 @@
 				{/each}
 			</Table.Header>
 			<Table.Body>
-				{#each table.getRowModel().rows as row (row.id)}
-					<Table.Row data-state={row.getIsSelected() && 'selected'}>
-						{#each row.getVisibleCells() as cell (cell.id)}
-							<Table.Cell align={cell.column.columnDef.meta?.align ?? 'left'}>
-								<FlexRender {cell} />
-							</Table.Cell>
-						{/each}
+				{#if errorMessage}
+					<Table.Row>
+						<Table.Cell colspan={columns.length} class="h-24 text-center">
+							<span role="alert">{errorMessage}</span>
+						</Table.Cell>
 					</Table.Row>
 				{:else}
-					<Table.Row>
-						<Table.Cell colspan={columns.length} class="h-24 text-center">No results</Table.Cell>
-					</Table.Row>
-				{/each}
+					{#each table.getRowModel().rows as row (row.id)}
+						<Table.Row data-state={row.getIsSelected() && 'selected'}>
+							{#each row.getVisibleCells() as cell (cell.id)}
+								<Table.Cell align={cell.column.columnDef.meta?.align ?? 'left'}>
+									<FlexRender {cell} />
+								</Table.Cell>
+							{/each}
+						</Table.Row>
+					{:else}
+						<Table.Row>
+							<Table.Cell colspan={columns.length} class="h-24 text-center">No results</Table.Cell>
+						</Table.Row>
+					{/each}
+				{/if}
 			</Table.Body>
 		</Table.Root>
 		<div class="flex items-center justify-between py-4">

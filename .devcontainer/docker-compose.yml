@@ -13,6 +13,7 @@ services:
       PGPASSWORD: sluice
       PGDATABASE: sluice
       NATS_URL: nats://nats:4222
+      AGENT_CONFIG_PATH: /workspaces/sluice/apps/agent/config/agent.json
     depends_on:
       db:
         condition: service_healthy
